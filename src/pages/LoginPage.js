@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaLock } from 'react-icons/fa';
+import { FaUser, FaLock, FaBuilding } from 'react-icons/fa';
 import axios from 'axios';
+import './LoginPage.css'; // Import custom CSS
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -44,90 +45,98 @@ const LoginPage = () => {
   }
 
   return (
-    <Container fluid className="vh-100 bg-primary bg-gradient">
-      <Row className="justify-content-center align-items-center h-100">
-        <Col md={6} lg={4}>
-          <Card className="shadow-lg border-0">
-            <Card.Body className="p-5">
-              <div className="text-center mb-4">
-                <h2 className="fw-bold text-primary">Inventory Pro</h2>
-                <p className="text-muted">Please sign in to continue</p>
-              </div>
+    <div className="login-container">
+      <div className="login-background">
+        <div className="login-overlay"></div>
+      </div>
+      
+      <Container fluid className="login-content">
+        <Row className="justify-content-center align-items-center min-vh-100">
+          <Col md={6} lg={4} xl={3}>
+            <Card className="login-card">
+              <Card.Body className="login-card-body">
+                <div className="login-header">
+                  <div className="company-logo">
+                    <FaBuilding className="logo-icon" />
+                  </div>
+                  <h1 className="company-name">Saranya International</h1>
+                  <h2 className="system-name">Inventory Management System</h2>
+                  <p className="login-subtitle">Please sign in to continue</p>
+                </div>
 
-              {error && (
-                <Alert variant="danger" className="mb-3">
-                  {error}
-                </Alert>
-              )}
+                {error && (
+                  <Alert variant="danger" className="custom-alert">
+                    {error}
+                  </Alert>
+                )}
 
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">
-                    <FaUser className="me-2" />
-                    Username
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
-                    required
+                <Form onSubmit={handleSubmit} className="login-form">
+                  <Form.Group className="form-group-custom">
+                    <Form.Label className="form-label-custom">
+                      <FaUser className="input-icon" />
+                      Username
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter your username"
+                      required
+                      disabled={loading}
+                      className="form-input-custom"
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="form-group-custom">
+                    <Form.Label className="form-label-custom">
+                      <FaLock className="input-icon" />
+                      Password
+                    </Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      required
+                      disabled={loading}
+                      className="form-input-custom"
+                    />
+                  </Form.Group>
+
+                  <Button
+                    type="submit"
+                    className="login-button"
                     disabled={loading}
-                    className="py-3"
-                  />
-                </Form.Group>
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          className="button-spinner"
+                        />
+                        Signing In...
+                      </>
+                    ) : (
+                      'Sign In to Dashboard'
+                    )}
+                  </Button>
+                </Form>
 
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-semibold">
-                    <FaLock className="me-2" />
-                    Password
-                  </Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    required
-                    disabled={loading}
-                    className="py-3"
-                  />
-                </Form.Group>
-
-                <Button
-                  variant="primary"
-                  type="submit"
-                  className="w-100 py-3 fw-bold"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Spinner
-                        as="span"
-                        animation="border"
-                        size="sm"
-                        role="status"
-                        className="me-2"
-                      />
-                      Signing In...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </Button>
-              </Form>
-
-              <div className="mt-4 p-3 bg-light rounded">
-                <small className="text-muted">
-                  <strong>Demo Credentials:</strong><br />
-                  Username: admin<br />
-                  Password: admin123
-                </small>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+                <div className="demo-credentials">
+                  <small className="demo-text">
+                    <strong>Demo Access:</strong><br />
+                    Username: admin | Password: admin123
+                  </small>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </div>
   );
 };
 

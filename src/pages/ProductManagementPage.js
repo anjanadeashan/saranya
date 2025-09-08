@@ -678,7 +678,7 @@ const ProductManagementPage = () => {
                     </td>
                     <td style={premiumStyles.tableCell}>
                       <span style={premiumStyles.price}>
-                        ${product.fixedPrice || 0}
+                        Rs.{product.fixedPrice || 0}
                       </span>
                     </td>
                     <td style={premiumStyles.tableCell}>
@@ -1058,7 +1058,7 @@ const ProductModal = ({ product, onSave, onClose, saving }) => {
 
           <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
             <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Price ($) *</label>
+              <label style={modalStyles.label}>Price (Rs) *</label>
               <input
                 className="modal-input"
                 type="number"
