@@ -1,64 +1,103 @@
 import React, { useState, useEffect } from 'react';
 
-// Mock API service for demo - replace with your actual API
+// API configuration - update these values for your backend
+const API_BASE_URL = 'http://localhost:8080/api'; // Update this to your backend URL
+
+// Add this helper to avoid ReferenceError and to centralize token retrieval
+function getAuthToken() {
+	// Replace with your actual token logic (localStorage, cookie, etc.)
+	// Example: return localStorage.getItem('token');
+	return null;
+}
+
+// API service to connect with your Spring Boot backend
 const api = {
   get: async (url) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Return mock data - replace this with your actual API call
-    return {
-      success: true,
-      message: "Success",
-      data: [
-        {
-          id: 1,
-          name: "Acme Corporation",
-          email: "contact@acme.com",
-          phone: "+1 (555) 123-4567",
-          address: "123 Business Ave, Suite 100",
-          city: "New York",
-          country: "USA",
-          creditLimit: 50000,
-          outstandingBalance: 12500,
-          isActive: true
-        },
-        {
-          id: 2,
-          name: "TechStart Inc",
-          email: "hello@techstart.com",
-          phone: "+1 (555) 987-6543",
-          address: "456 Innovation Drive",
-          city: "San Francisco",
-          country: "USA",
-          creditLimit: 25000,
-          outstandingBalance: 22000,
-          isActive: true
-        },
-        {
-          id: 3,
-          name: "Global Enterprises",
-          email: "info@global.com",
-          phone: "+1 (555) 456-7890",
-          address: "789 Corporate Blvd",
-          city: "Chicago",
-          country: "USA",
-          creditLimit: 75000,
-          outstandingBalance: 5000,
-          isActive: false
-        }
-      ]
-    };
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Safely parse JSON (handle empty responses)
+    if (response.status === 204) return null;
+    return await response.json();
   },
+  
   post: async (url, data) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true, data: { ...data, id: Date.now() } };
+    const token = getAuthToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    if (response.status === 204) return null;
+    return await response.json();
   },
+  
   put: async (url, data) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true, data };
+    const token = getAuthToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (response.status === 204) return null;
+    return await response.json();
   },
+  
   delete: async (url) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true, data: {} };
+    const token = getAuthToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+      headers,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (response.status === 204) return null;
+    return await response.json();
   }
 };
 
@@ -79,10 +118,11 @@ const CustomerManagementPage = () => {
       setLoading(true);
       setError(null);
       
+      // Call your backend API endpoint
       const response = await api.get('/customers');
       console.log('API Response:', response);
       
-      // Handle different response structures
+      // Handle the ApiResponse structure from your backend
       let customersData = [];
       
       if (response && response.success && Array.isArray(response.data)) {
@@ -96,7 +136,7 @@ const CustomerManagementPage = () => {
         customersData = [];
       }
       
-      // Normalize data structure to handle both customer and supplier data
+      // Map backend response to frontend structure
       const normalizedData = customersData.map(item => ({
         id: item.id,
         name: item.name || item.companyName || 'Unknown',
@@ -108,7 +148,8 @@ const CustomerManagementPage = () => {
         creditLimit: item.creditLimit || 0,
         outstandingBalance: item.outstandingBalance || 0,
         isActive: item.isActive !== undefined ? item.isActive : item.status === 'active' || true,
-        uniqueSupplierCode: item.uniqueSupplierCode,
+        // Additional fields that might come from backend
+        uniqueSupplierCode: item.uniqueSupplierCode || item.customerCode,
         contactPerson: item.contactPerson
       }));
       
@@ -117,7 +158,7 @@ const CustomerManagementPage = () => {
       
     } catch (error) {
       console.error('Error fetching customers:', error);
-      setError('Failed to load customers');
+      setError(`Failed to load customers: ${error.message}`);
       setCustomers([]);
     } finally {
       setLoading(false);
@@ -143,27 +184,46 @@ const CustomerManagementPage = () => {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
         await api.delete(`/customers/${id}`);
-        fetchCustomers();
+        fetchCustomers(); // Refresh the list
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Failed to delete customer');
+        alert(`Failed to delete customer: ${error.message}`);
       }
     }
   };
 
   const handleSave = async (customerData) => {
     try {
+      // Transform frontend data to match backend DTO structure
+      const backendData = {
+        name: customerData.name,
+        email: customerData.email || null,
+        phone: customerData.phone || null,
+        address: customerData.address || null,
+        city: customerData.city || null,
+        country: customerData.country || null,
+        creditLimit: customerData.creditLimit ? parseFloat(customerData.creditLimit) : 0,
+        outstandingBalance: customerData.outstandingBalance ? parseFloat(customerData.outstandingBalance) : 0,
+        isActive: customerData.isActive,
+        // Map additional fields if your backend supports them
+        uniqueSupplierCode: customerData.uniqueSupplierCode || null,
+        contactPerson: customerData.contactPerson || null
+      };
+
       if (selectedCustomer) {
-        await api.put(`/customers/${selectedCustomer.id}`, customerData);
+        // Update existing customer
+        await api.put(`/customers/${selectedCustomer.id}`, backendData);
       } else {
-        await api.post('/customers', customerData);
+        // Create new customer
+        await api.post('/customers', backendData);
       }
+      
       setShowModal(false);
       setSelectedCustomer(null);
-      fetchCustomers();
+      fetchCustomers(); // Refresh the list
     } catch (error) {
       console.error('Error saving customer:', error);
-      alert('Failed to save customer');
+      alert(`Failed to save customer: ${error.message}`);
     }
   };
 
@@ -402,6 +462,8 @@ const CustomerManagementPage = () => {
           fontSize: '14px'
         }}>
           Found {filteredCustomers.length} customers | Total: {customers.length}
+          <br />
+          API Base URL: {API_BASE_URL}
         </div>
 
         {/* Customers Table */}
@@ -639,7 +701,8 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
     city: customer?.city || '',
     country: customer?.country || '',
     creditLimit: customer?.creditLimit || '',
-    outstandingBalance: customer?.outstandingBalance || 0,
+    // use empty string so the controlled number input stays consistent with other fields
+    outstandingBalance: customer?.outstandingBalance ?? '',
     isActive: customer?.isActive ?? true,
     uniqueSupplierCode: customer?.uniqueSupplierCode || '',
     contactPerson: customer?.contactPerson || ''
@@ -693,7 +756,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          {customer ? '✏️ Edit Customer' : '➕ Add New Customer'}
+          {customer ? 'Edit Customer' : 'Add New Customer'}
         </h2>
         
         <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
@@ -733,7 +796,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>📧 Email</label>
+              }}>Email</label>
               <input
                 type="email"
                 value={formData.email}
@@ -760,7 +823,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>📞 Phone</label>
+              }}>Phone</label>
               <input
                 type="tel"
                 value={formData.phone}
@@ -789,7 +852,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>🏷️ Supplier Code</label>
+              }}>Customer Code</label>
               <input
                 type="text"
                 value={formData.uniqueSupplierCode}
@@ -816,7 +879,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>👤 Contact Person</label>
+              }}>Contact Person</label>
               <input
                 type="text"
                 value={formData.contactPerson}
@@ -844,7 +907,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
               fontWeight: '600',
               marginBottom: '8px',
               color: '#374151'
-            }}>🏠 Address</label>
+            }}>Address</label>
             <textarea
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
@@ -875,7 +938,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>🏙️ City</label>
+              }}>City</label>
               <input
                 type="text"
                 value={formData.city}
@@ -902,7 +965,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>🌍 Country</label>
+              }}>Country</label>
               <input
                 type="text"
                 value={formData.country}
@@ -931,7 +994,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>💳 Credit Limit</label>
+              }}>Credit Limit</label>
               <input
                 type="number"
                 step="0.01"
@@ -959,7 +1022,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 fontWeight: '600',
                 marginBottom: '8px',
                 color: '#374151'
-              }}>💰 Outstanding Balance</label>
+              }}>Outstanding Balance</label>
               <input
                 type="number"
                 step="0.01"
@@ -1008,7 +1071,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
               color: '#374151',
               cursor: 'pointer'
             }}>
-              ✅ Active Customer
+              Active Customer
             </label>
           </div>
           
@@ -1034,7 +1097,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)'
               }}
             >
-              {customer ? '💾 Update Customer' : '✨ Create Customer'}
+              {customer ? 'Update Customer' : 'Create Customer'}
             </button>
             <button
               type="button"
@@ -1053,7 +1116,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 boxShadow: '0 8px 25px rgba(107, 114, 128, 0.3)'
               }}
             >
-              ❌ Cancel
+              Cancel
             </button>
           </div>
         </form>
