@@ -738,6 +738,7 @@ const SalesPage = () => {
 };
 
 // Sale Modal Component
+//add
 const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, downloadInvoice }) => {
   const [formData, setFormData] = useState({
     customerId: sale?.customer?.id || '',
