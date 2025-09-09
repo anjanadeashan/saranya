@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import './SupplierManagement.css'; // Import the CSS file
 
 const SupplierManagementPage = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -9,10 +10,15 @@ const SupplierManagementPage = () => {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('testing');
 
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
+  // Currency formatting function
+  const formatCurrency = (amount) => {
+    return `Rs. ${new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount || 0)}`;
+  };
 
   // Configure API timeout and interceptors
   React.useEffect(() => {
@@ -64,6 +70,32 @@ const SupplierManagementPage = () => {
       api.interceptors.request.eject(requestInterceptor);
       api.interceptors.response.eject(responseInterceptor);
     };
+  }, []);
+
+  // Test connection function
+  const testConnection = async () => {
+    try {
+      const response = await api.get('/suppliers', { timeout: 5000 });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  React.useEffect(() => {
+    const checkConnection = async () => {
+      const isConnected = await testConnection();
+      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+    };
+    
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    fetchSuppliers();
   }, []);
 
   const fetchSuppliers = async (retryCount = 0) => {
@@ -221,391 +253,12 @@ const SupplierManagementPage = () => {
     }
   };
 
-  const getStatusColors = (isActive) => {
-    return isActive ? {
-      background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-      color: '#15803d',
-      border: '1px solid #86efac'
-    } : {
-      background: 'linear-gradient(135deg, #fef2f2, #fecaca)',
-      color: '#dc2626',
-      border: '1px solid #fca5a5'
-    };
-  };
-
-  const premiumStyles = {
-    container: {
-      padding: '32px',
-      background: 'transparent',
-      minHeight: '100vh',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    },
-    
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '32px',
-      padding: '0 8px',
-    },
-    
-    title: {
-      fontSize: '2.75rem',
-      fontWeight: '800',
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
-      margin: 0,
-      letterSpacing: '-0.02em',
-    },
-    
-    addButton: {
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      border: 'none',
-      borderRadius: '16px',
-      padding: '16px 32px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
-      position: 'relative',
-      overflow: 'hidden',
-    },
-    
-    searchContainer: {
-      marginBottom: '32px',
-      position: 'relative',
-    },
-    
-    searchInput: {
-      width: '100%',
-      padding: '20px 24px',
-      fontSize: '16px',
-      border: '2px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '20px',
-      background: 'rgba(255, 255, 255, 0.9)',
-      backdropFilter: 'blur(20px)',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-    },
-    
-    tableContainer: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '24px',
-      overflow: 'hidden',
-      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      backdropFilter: 'blur(20px)',
-    },
-    
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse',
-    },
-    
-    tableHeader: {
-      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-      borderBottom: '2px solid rgba(0, 0, 0, 0.05)',
-    },
-    
-    headerCell: {
-      padding: '20px 24px',
-      textAlign: 'left',
-      fontSize: '13px',
-      fontWeight: '700',
-      color: '#166534',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-    },
-    
-    tableRow: {
-      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-    },
-    
-    tableCell: {
-      padding: '20px 24px',
-      verticalAlign: 'middle',
-    },
-    
-    supplierInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    },
-    
-    supplierName: {
-      fontSize: '16px',
-      fontWeight: '600',
-      color: '#1e293b',
-      lineHeight: '1.5',
-    },
-    
-    supplierEmail: {
-      fontSize: '14px',
-      color: '#64748b',
-      lineHeight: '1.4',
-    },
-    
-    supplierCode: {
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#475569',
-      fontFamily: 'Monaco, Consolas, monospace',
-      background: 'rgba(16, 185, 129, 0.1)',
-      padding: '4px 8px',
-      borderRadius: '6px',
-      display: 'inline-block',
-    },
-    
-    contactInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    },
-    
-    contactName: {
-      fontSize: '14px',
-      fontWeight: '600',
-      color: '#1e293b',
-    },
-    
-    contactPhone: {
-      fontSize: '13px',
-      color: '#64748b',
-      fontFamily: 'Monaco, Consolas, monospace',
-    },
-    
-    locationInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    },
-    
-    locationCity: {
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#1e293b',
-    },
-    
-    locationAddress: {
-      fontSize: '13px',
-      color: '#64748b',
-      lineHeight: '1.4',
-    },
-    
-    statusBadge: {
-      padding: '8px 16px',
-      borderRadius: '12px',
-      fontSize: '12px',
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      display: 'inline-block',
-      letterSpacing: '0.05em',
-    },
-    
-    actionButton: {
-      background: 'none',
-      border: 'none',
-      color: '#10b981',
-      fontWeight: '600',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      transition: 'all 0.3s ease',
-      marginRight: '8px',
-    },
-    
-    deleteButton: {
-      background: 'none',
-      border: 'none',
-      color: '#dc2626',
-      fontWeight: '600',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      transition: 'all 0.3s ease',
-    },
-    
-    emptyState: {
-      textAlign: 'center',
-      padding: '64px 32px',
-      color: '#64748b',
-      fontSize: '16px',
-      fontStyle: 'italic',
-    },
-    
-    loadingContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      gap: '24px',
-    },
-    
-    loadingSpinner: {
-      width: '64px',
-      height: '64px',
-      border: '4px solid rgba(16, 185, 129, 0.2)',
-      borderTop: '4px solid #10b981',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-    },
-    
-    loadingText: {
-      fontSize: '18px',
-      fontWeight: '500',
-      color: '#64748b',
-    },
-    
-    errorContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      gap: '24px',
-    },
-    
-    errorText: {
-      fontSize: '20px',
-      fontWeight: '600',
-      color: '#dc2626',
-      textAlign: 'center',
-      maxWidth: '600px',
-    },
-    
-    retryButton: {
-      background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '12px 24px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-    },
-
-    debugInfo: {
-      marginBottom: '20px',
-      padding: '15px',
-      background: '#f8fafc',
-      borderRadius: '8px',
-      border: '1px solid #e2e8f0',
-      fontSize: '14px',
-    },
-
-    connectionStatus: {
-      marginBottom: '20px',
-      padding: '12px',
-      borderRadius: '8px',
-      fontSize: '14px',
-      fontWeight: '500',
-    },
-
-    statusConnected: {
-      background: '#dcfce7',
-      color: '#166534',
-      border: '1px solid #bbf7d0',
-    },
-
-    statusDisconnected: {
-      background: '#fef2f2',
-      color: '#dc2626',
-      border: '1px solid #fecaca',
-    },
-  };
-
-  // Add animations
-  React.useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      .supplier-row:hover {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.03)) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-      }
-      
-      .add-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
-      }
-      
-      .search-input:focus {
-        border-color: #10b981 !important;
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-      }
-      
-      .action-button:hover {
-        background: rgba(16, 185, 129, 0.1) !important;
-        color: #059669 !important;
-      }
-      
-      .delete-button:hover {
-        background: rgba(220, 38, 38, 0.1) !important;
-        color: #b91c1c !important;
-      }
-    `;
-    
-    if (!document.head.querySelector('#supplier-management-styles')) {
-      styleElement.id = 'supplier-management-styles';
-      document.head.appendChild(styleElement);
-    }
-
-    return () => {
-      const existingStyles = document.head.querySelector('#supplier-management-styles');
-      if (existingStyles) {
-        existingStyles.remove();
-      }
-    };
-  }, []);
-
-  // Test connection function
-  const testConnection = async () => {
-    try {
-      const response = await api.get('/suppliers', { timeout: 5000 });
-      return true;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const [connectionStatus, setConnectionStatus] = useState('testing');
-
-  React.useEffect(() => {
-    const checkConnection = async () => {
-      const isConnected = await testConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
-    };
-    
-    checkConnection();
-    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-
   if (loading) {
     return (
-      <div style={premiumStyles.container}>
-        <div style={premiumStyles.loadingContainer}>
-          <div style={premiumStyles.loadingSpinner}></div>
-          <div style={premiumStyles.loadingText}>Loading suppliers...</div>
+      <div className="supplier-management-container">
+        <div className="supplier-loading-container">
+          <div className="supplier-loading-spinner"></div>
+          <div className="supplier-loading-text">Loading suppliers...</div>
         </div>
       </div>
     );
@@ -613,20 +266,12 @@ const SupplierManagementPage = () => {
 
   if (error) {
     return (
-      <div style={premiumStyles.container}>
-        <div style={premiumStyles.errorContainer}>
-          <div style={premiumStyles.errorText}>{error}</div>
+      <div className="supplier-management-container">
+        <div className="supplier-error-container">
+          <div className="supplier-error-text">{error}</div>
           <button
-            style={premiumStyles.retryButton}
+            className="supplier-retry-button"
             onClick={() => fetchSuppliers()}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-            }}
           >
             Retry
           </button>
@@ -636,42 +281,21 @@ const SupplierManagementPage = () => {
   }
 
   return (
-    <div style={premiumStyles.container}>
+    <div className="supplier-management-container">
       {/* Connection Status */}
-      <div style={{
-        ...premiumStyles.connectionStatus,
-        ...(connectionStatus === 'connected' ? premiumStyles.statusConnected : premiumStyles.statusDisconnected)
-      }}>
+      <div className={`supplier-connection-status ${
+        connectionStatus === 'connected' ? 'supplier-status-connected' : 'supplier-status-disconnected'
+      }`}>
         {connectionStatus === 'connected' ? '🟢 Connected to server' : 
          connectionStatus === 'disconnected' ? '🔴 Server connection failed' : 
          '🟡 Testing connection...'}
       </div>
 
-      {/* Debug info - remove in production */}
-      <div style={premiumStyles.debugInfo}>
-        <p><strong>Debug Information:</strong></p>
-        <p>API Base URL: {api.defaults.baseURL || 'Not configured'}</p>
-        <p>API Timeout: {api.defaults.timeout / 1000}s</p>
-        <p>Suppliers loaded: {suppliers.length}</p>
-        <p>Filtered suppliers: {filteredSuppliers.length}</p>
-        <p>Search term: "{searchTerm}"</p>
-        <p>Connection Status: {connectionStatus}</p>
-        {suppliers.length > 0 && (
-          <details style={{ marginTop: '10px' }}>
-            <summary>First supplier data:</summary>
-            <pre style={{ fontSize: '12px', marginTop: '5px', maxHeight: '200px', overflow: 'auto' }}>
-              {JSON.stringify(suppliers[0], null, 2)}
-            </pre>
-          </details>
-        )}
-      </div>
-
       {/* Header */}
-      <div style={premiumStyles.header}>
-        <h1 style={premiumStyles.title}>Supplier Management</h1>
+      <div className="supplier-management-header">
+        <h1 className="supplier-management-title">Supplier Management</h1>
         <button
-          className="add-button"
-          style={premiumStyles.addButton}
+          className="supplier-add-button"
           onClick={() => {
             setSelectedSupplier(null);
             setShowModal(true);
@@ -682,99 +306,101 @@ const SupplierManagementPage = () => {
       </div>
 
       {/* Search */}
-      <div style={premiumStyles.searchContainer}>
+      <div className="supplier-search-container">
         <input
-          className="search-input"
           type="text"
           placeholder="Search suppliers by name, code, or contact person..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={premiumStyles.searchInput}
+          className="supplier-search-input"
         />
       </div>
 
       {/* Suppliers Table */}
-      <div style={premiumStyles.tableContainer}>
-        <table style={premiumStyles.table}>
-          <thead style={premiumStyles.tableHeader}>
+      <div className="supplier-table-container">
+        <table className="supplier-table">
+          <thead className="supplier-table-header">
             <tr>
-              <th style={premiumStyles.headerCell}>Supplier</th>
-              <th style={premiumStyles.headerCell}>Code</th>
-              <th style={premiumStyles.headerCell}>Contact</th>
-              <th style={premiumStyles.headerCell}>Location</th>
-              <th style={premiumStyles.headerCell}>Status</th>
-              <th style={premiumStyles.headerCell}>Actions</th>
+              <th className="supplier-header-cell">Supplier</th>
+              <th className="supplier-header-cell">Code</th>
+              <th className="supplier-header-cell">Contact</th>
+              <th className="supplier-header-cell">Location</th>
+              <th className="supplier-header-cell">Status</th>
+              <th className="supplier-header-cell">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredSuppliers.length > 0 ? (
               filteredSuppliers.map((supplier) => {
-                const statusColors = getStatusColors(supplier.isActive);
-                
                 return (
                   <tr 
                     key={supplier.id || supplier.uniqueSupplierCode} 
-                    className="supplier-row"
-                    style={premiumStyles.tableRow}
+                    className="supplier-table-row"
                   >
-                    <td style={premiumStyles.tableCell}>
-                      <div style={premiumStyles.supplierInfo}>
-                        <div style={premiumStyles.supplierName}>
+                    <td className="supplier-table-cell">
+                      <div className="supplier-info">
+                        <div className="supplier-name">
                           {supplier.name || 'N/A'}
                         </div>
-                        <div style={premiumStyles.supplierEmail}>
+                        <div className="supplier-email">
                           {supplier.email || 'No email'}
                         </div>
+                        {/* Display credit limit or outstanding amount if available */}
+                        {supplier.creditLimit && (
+                          <div className="supplier-credit-info">
+                            Credit Limit: {formatCurrency(supplier.creditLimit)}
+                          </div>
+                        )}
+                        {supplier.outstandingAmount && (
+                          <div className="supplier-outstanding-info">
+                            Outstanding: {formatCurrency(supplier.outstandingAmount)}
+                          </div>
+                        )}
                       </div>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span style={premiumStyles.supplierCode}>
+                    <td className="supplier-table-cell">
+                      <span className="supplier-code">
                         {supplier.uniqueSupplierCode || 'N/A'}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <div style={premiumStyles.contactInfo}>
-                        <div style={premiumStyles.contactName}>
+                    <td className="supplier-table-cell">
+                      <div className="supplier-contact-info">
+                        <div className="supplier-contact-name">
                           {supplier.contactPerson || 'N/A'}
                         </div>
-                        <div style={premiumStyles.contactPhone}>
+                        <div className="supplier-contact-phone">
                           {supplier.phone || 'No phone'}
                         </div>
                       </div>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <div style={premiumStyles.locationInfo}>
-                        <div style={premiumStyles.locationCity}>
+                    <td className="supplier-table-cell">
+                      <div className="supplier-location-info">
+                        <div className="supplier-location-city">
                           {(supplier.city && supplier.country) 
                             ? `${supplier.city}, ${supplier.country}`
                             : (supplier.city || supplier.country || 'N/A')}
                         </div>
-                        <div style={premiumStyles.locationAddress}>
+                        <div className="supplier-location-address">
                           {supplier.address || 'No address'}
                         </div>
                       </div>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span 
-                        style={{
-                          ...premiumStyles.statusBadge,
-                          ...statusColors
-                        }}
-                      >
+                    <td className="supplier-table-cell">
+                      <span className={`supplier-status-badge ${
+                        supplier.isActive ? 'supplier-status-active' : 'supplier-status-inactive'
+                      }`}>
                         {supplier.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
+                    <td className="supplier-table-cell">
                       <button
-                        className="action-button"
-                        style={premiumStyles.actionButton}
+                        className="supplier-action-button"
                         onClick={() => handleEdit(supplier)}
                       >
                         Edit
                       </button>
                       <button
-                        className="delete-button"
-                        style={premiumStyles.deleteButton}
+                        className="supplier-delete-button"
                         onClick={() => handleDelete(supplier.id)}
                       >
                         Delete
@@ -785,7 +411,7 @@ const SupplierManagementPage = () => {
               })
             ) : (
               <tr>
-                <td colSpan="6" style={premiumStyles.emptyState}>
+                <td colSpan="6" className="supplier-empty-state">
                   {searchTerm 
                     ? 'No suppliers found matching your search.' 
                     : 'No suppliers available. Click "Add New Supplier" to get started.'}
@@ -806,6 +432,7 @@ const SupplierManagementPage = () => {
             setSelectedSupplier(null);
           }}
           saving={saving}
+          formatCurrency={formatCurrency}
         />
       )}
     </div>
@@ -813,7 +440,7 @@ const SupplierManagementPage = () => {
 };
 
 // Enhanced Supplier Modal Component with loading state
-const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
+const SupplierModal = ({ supplier, onSave, onClose, saving, formatCurrency }) => {
   const [formData, setFormData] = useState({
     name: supplier?.name || '',
     uniqueSupplierCode: supplier?.uniqueSupplierCode || '',
@@ -823,6 +450,8 @@ const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
     address: supplier?.address || '',
     city: supplier?.city || '',
     country: supplier?.country || '',
+    creditLimit: supplier?.creditLimit || '',
+    paymentTerms: supplier?.paymentTerms || '',
     isActive: supplier?.isActive ?? true
   });
 
@@ -842,180 +471,13 @@ const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
+
+    if (formData.creditLimit && isNaN(parseFloat(formData.creditLimit))) {
+      errors.creditLimit = 'Credit limit must be a valid number';
+    }
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
-
-  const modalStyles = {
-    overlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.6)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px',
-    },
-    
-    modal: {
-      background: 'rgba(255, 255, 255, 0.98)',
-      backdropFilter: 'blur(20px)',
-      borderRadius: '24px',
-      padding: '32px',
-      width: '100%',
-      maxWidth: '600px',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 25px 60px rgba(0, 0, 0, 0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      position: 'relative',
-    },
-    
-    title: {
-      fontSize: '24px',
-      fontWeight: '700',
-      color: '#1e293b',
-      marginBottom: '24px',
-      textAlign: 'center',
-    },
-    
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '20px',
-    },
-    
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-    },
-    
-    inputRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-    },
-    
-    label: {
-      fontSize: '14px',
-      fontWeight: '600',
-      color: '#374151',
-      letterSpacing: '0.025em',
-    },
-    
-    input: {
-      padding: '16px',
-      fontSize: '16px',
-      border: '2px solid rgba(0, 0, 0, 0.1)',
-      borderRadius: '12px',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      background: 'rgba(255, 255, 255, 0.8)',
-    },
-    
-    inputError: {
-      borderColor: '#dc2626',
-      background: 'rgba(239, 68, 68, 0.05)',
-    },
-    
-    textarea: {
-      padding: '16px',
-      fontSize: '16px',
-      border: '2px solid rgba(0, 0, 0, 0.1)',
-      borderRadius: '12px',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      background: 'rgba(255, 255, 255, 0.8)',
-      minHeight: '80px',
-      resize: 'vertical',
-    },
-    
-    errorText: {
-      fontSize: '12px',
-      color: '#dc2626',
-      marginTop: '4px',
-    },
-    
-    checkboxGroup: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '16px',
-      background: 'rgba(16, 185, 129, 0.05)',
-      borderRadius: '12px',
-      border: '1px solid rgba(16, 185, 129, 0.2)',
-    },
-    
-    checkbox: {
-      width: '20px',
-      height: '20px',
-      accentColor: '#10b981',
-    },
-    
-    checkboxLabel: {
-      fontSize: '16px',
-      fontWeight: '500',
-      color: '#1e293b',
-    },
-    
-    buttonGroup: {
-      display: 'flex',
-      gap: '12px',
-      marginTop: '24px',
-    },
-    
-    saveButton: {
-      flex: 1,
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '16px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-    },
-    
-    saveButtonDisabled: {
-      background: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
-      cursor: 'not-allowed',
-      boxShadow: '0 4px 15px rgba(156, 163, 175, 0.3)',
-    },
-    
-    cancelButton: {
-      flex: 1,
-      background: 'rgba(107, 114, 128, 0.1)',
-      border: '2px solid rgba(107, 114, 128, 0.2)',
-      borderRadius: '12px',
-      padding: '16px',
-      color: '#6b7280',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-    },
-    
-    loadingSpinner: {
-      width: '20px',
-      height: '20px',
-      border: '2px solid rgba(255, 255, 255, 0.3)',
-      borderTop: '2px solid white',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-    },
   };
 
   const handleSubmit = async (e) => {
@@ -1036,6 +498,8 @@ const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
       address: formData.address.trim(),
       city: formData.city.trim(),
       country: formData.country.trim(),
+      paymentTerms: formData.paymentTerms.trim(),
+      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
     };
     
     console.log('Submitting form data:', cleanedData);
@@ -1057,200 +521,181 @@ const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
     }
   };
 
-  // Add focus styles
-  React.useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      .modal-input:focus {
-        border-color: #10b981 !important;
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-      }
-      
-      .save-button:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
-      }
-      
-      .cancel-button:hover {
-        background: rgba(107, 114, 128, 0.15) !important;
-        border-color: rgba(107, 114, 128, 0.3) !important;
-      }
-    `;
-    
-    if (!document.head.querySelector('#supplier-modal-styles')) {
-      styleElement.id = 'supplier-modal-styles';
-      document.head.appendChild(styleElement);
-    }
-
-    return () => {
-      const existingStyles = document.head.querySelector('#supplier-modal-styles');
-      if (existingStyles) {
-        existingStyles.remove();
-      }
-    };
-  }, []);
-
   return (
-    <div style={modalStyles.overlay} onClick={onClose}>
-      <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 style={modalStyles.title}>
+    <div className="supplier-modal-overlay" onClick={onClose}>
+      <div className="supplier-modal" onClick={(e) => e.stopPropagation()}>
+        <h2 className="supplier-modal-title">
           {supplier ? 'Edit Supplier' : 'Add New Supplier'}
         </h2>
         
-        <form onSubmit={handleSubmit} style={modalStyles.form}>
-          <div style={modalStyles.inputRow}>
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Supplier Name *</label>
+        <form onSubmit={handleSubmit} className="supplier-modal-form">
+          <div className="supplier-input-row">
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Supplier Name *</label>
               <input
-                className="modal-input"
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                style={{
-                  ...modalStyles.input,
-                  ...(validationErrors.name ? modalStyles.inputError : {})
-                }}
+                className={`supplier-modal-input ${validationErrors.name ? 'supplier-input-error' : ''}`}
                 required
                 placeholder="Enter supplier name"
                 disabled={saving}
               />
               {validationErrors.name && (
-                <span style={modalStyles.errorText}>{validationErrors.name}</span>
+                <span className="supplier-error-text">{validationErrors.name}</span>
               )}
             </div>
 
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Supplier Code *</label>
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Supplier Code *</label>
               <input
-                className="modal-input"
                 type="text"
                 value={formData.uniqueSupplierCode}
                 onChange={(e) => handleChange('uniqueSupplierCode', e.target.value)}
-                style={{
-                  ...modalStyles.input,
-                  ...(validationErrors.uniqueSupplierCode ? modalStyles.inputError : {})
-                }}
+                className={`supplier-modal-input ${validationErrors.uniqueSupplierCode ? 'supplier-input-error' : ''}`}
                 required
                 placeholder="SUP001"
                 disabled={saving}
               />
               {validationErrors.uniqueSupplierCode && (
-                <span style={modalStyles.errorText}>{validationErrors.uniqueSupplierCode}</span>
+                <span className="supplier-error-text">{validationErrors.uniqueSupplierCode}</span>
               )}
             </div>
           </div>
 
-          <div style={modalStyles.inputRow}>
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Contact Person</label>
+          <div className="supplier-input-row">
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Contact Person</label>
               <input
-                className="modal-input"
                 type="text"
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}
-                style={modalStyles.input}
+                className="supplier-modal-input"
                 placeholder="Enter contact person"
                 disabled={saving}
               />
             </div>
 
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Phone Number</label>
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Phone Number</label>
               <input
-                className="modal-input"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
-                style={modalStyles.input}
+                className="supplier-modal-input"
                 placeholder="+1 (555) 123-4567"
                 disabled={saving}
               />
             </div>
           </div>
 
-          <div style={modalStyles.inputGroup}>
-            <label style={modalStyles.label}>Email Address</label>
+          <div className="supplier-input-group">
+            <label className="supplier-modal-label">Email Address</label>
             <input
-              className="modal-input"
               type="email"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              style={{
-                ...modalStyles.input,
-                ...(validationErrors.email ? modalStyles.inputError : {})
-              }}
+              className={`supplier-modal-input ${validationErrors.email ? 'supplier-input-error' : ''}`}
               placeholder="supplier@company.com"
               disabled={saving}
             />
             {validationErrors.email && (
-              <span style={modalStyles.errorText}>{validationErrors.email}</span>
+              <span className="supplier-error-text">{validationErrors.email}</span>
             )}
           </div>
 
-          <div style={modalStyles.inputGroup}>
-            <label style={modalStyles.label}>Address</label>
+          <div className="supplier-input-group">
+            <label className="supplier-modal-label">Address</label>
             <textarea
-              className="modal-input"
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
-              style={modalStyles.textarea}
+              className="supplier-modal-textarea"
               placeholder="Enter full address"
               disabled={saving}
             />
           </div>
 
-          <div style={modalStyles.inputRow}>
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>City</label>
+          <div className="supplier-input-row">
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">City</label>
               <input
-                className="modal-input"
                 type="text"
                 value={formData.city}
                 onChange={(e) => handleChange('city', e.target.value)}
-                style={modalStyles.input}
+                className="supplier-modal-input"
                 placeholder="Enter city"
                 disabled={saving}
               />
             </div>
 
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Country</label>
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Country</label>
               <input
-                className="modal-input"
                 type="text"
                 value={formData.country}
                 onChange={(e) => handleChange('country', e.target.value)}
-                style={modalStyles.input}
+                className="supplier-modal-input"
                 placeholder="Enter country"
                 disabled={saving}
               />
             </div>
           </div>
 
-          <div style={modalStyles.checkboxGroup}>
+          <div className="supplier-input-row">
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Credit Limit (Rs.)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.creditLimit}
+                onChange={(e) => handleChange('creditLimit', e.target.value)}
+                className={`supplier-modal-input ${validationErrors.creditLimit ? 'supplier-input-error' : ''}`}
+                placeholder="0.00"
+                disabled={saving}
+              />
+              {validationErrors.creditLimit && (
+                <span className="supplier-error-text">{validationErrors.creditLimit}</span>
+              )}
+              {formData.creditLimit && (
+                <div className="supplier-currency-preview">
+                  Preview: {formatCurrency(formData.creditLimit)}
+                </div>
+              )}
+            </div>
+
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Payment Terms</label>
+              <input
+                type="text"
+                value={formData.paymentTerms}
+                onChange={(e) => handleChange('paymentTerms', e.target.value)}
+                className="supplier-modal-input"
+                placeholder="Net 30 days"
+                disabled={saving}
+              />
+            </div>
+          </div>
+
+          <div className="supplier-checkbox-group">
             <input
               type="checkbox"
               checked={formData.isActive}
               onChange={(e) => handleChange('isActive', e.target.checked)}
-              style={modalStyles.checkbox}
+              className="supplier-checkbox"
               disabled={saving}
             />
-            <label style={modalStyles.checkboxLabel}>
+            <label className="supplier-checkbox-label">
               Active Supplier
             </label>
           </div>
 
-          <div style={modalStyles.buttonGroup}>
+          <div className="supplier-modal-button-group">
             <button
               type="submit"
-              className="save-button"
-              style={{
-                ...modalStyles.saveButton,
-                ...(saving ? modalStyles.saveButtonDisabled : {})
-              }}
+              className="supplier-modal-save-button"
               disabled={saving}
             >
-              {saving && <div style={modalStyles.loadingSpinner}></div>}
+              {saving && <div className="supplier-modal-loading-spinner"></div>}
               {saving 
                 ? (supplier ? 'Updating...' : 'Creating...') 
                 : (supplier ? 'Update Supplier' : 'Create Supplier')
@@ -1258,8 +703,7 @@ const SupplierModal = ({ supplier, onSave, onClose, saving }) => {
             </button>
             <button
               type="button"
-              className="cancel-button"
-              style={modalStyles.cancelButton}
+              className="supplier-modal-cancel-button"
               onClick={onClose}
               disabled={saving}
             >

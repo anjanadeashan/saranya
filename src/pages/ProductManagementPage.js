@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import './ProductManagement.css'; // Import the CSS file
 
 const ProductManagementPage = () => {
   const [products, setProducts] = useState([]);
@@ -226,340 +227,12 @@ const ProductManagementPage = () => {
     return 'in-stock';
   };
 
-  const getStockStatusColors = (status) => {
-    switch (status) {
-      case 'out-of-stock': 
-        return {
-          background: 'linear-gradient(135deg, #fef2f2, #fee2e2)',
-          color: '#dc2626',
-          border: '1px solid #fecaca'
-        };
-      case 'low-stock': 
-        return {
-          background: 'linear-gradient(135deg, #fffbeb, #fef3c7)',
-          color: '#d97706',
-          border: '1px solid #fed7aa'
-        };
-      case 'in-stock': 
-        return {
-          background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-          color: '#16a34a',
-          border: '1px solid #bbf7d0'
-        };
-      default: 
-        return {
-          background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)',
-          color: '#6b7280',
-          border: '1px solid #d1d5db'
-        };
-    }
-  };
-
-  const premiumStyles = {
-    container: {
-      padding: '32px',
-      background: 'transparent',
-      minHeight: '100vh',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    },
-    
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '32px',
-      padding: '0 8px',
-    },
-    
-    title: {
-      fontSize: '2.75rem',
-      fontWeight: '800',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
-      margin: 0,
-      letterSpacing: '-0.02em',
-    },
-    
-    addButton: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      border: 'none',
-      borderRadius: '16px',
-      padding: '16px 32px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-      position: 'relative',
-      overflow: 'hidden',
-    },
-    
-    searchContainer: {
-      marginBottom: '32px',
-      position: 'relative',
-    },
-    
-    searchInput: {
-      width: '100%',
-      padding: '20px 24px',
-      fontSize: '16px',
-      border: '2px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '20px',
-      background: 'rgba(255, 255, 255, 0.9)',
-      backdropFilter: 'blur(20px)',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-    },
-    
-    tableContainer: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '24px',
-      overflow: 'hidden',
-      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      backdropFilter: 'blur(20px)',
-    },
-    
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse',
-    },
-    
-    tableHeader: {
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      borderBottom: '2px solid rgba(0, 0, 0, 0.05)',
-    },
-    
-    headerCell: {
-      padding: '20px 24px',
-      textAlign: 'left',
-      fontSize: '13px',
-      fontWeight: '700',
-      color: '#475569',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-    },
-    
-    tableRow: {
-      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-    },
-    
-    tableCell: {
-      padding: '20px 24px',
-      verticalAlign: 'middle',
-    },
-    
-    productInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    },
-    
-    productName: {
-      fontSize: '16px',
-      fontWeight: '600',
-      color: '#1e293b',
-      lineHeight: '1.5',
-    },
-    
-    productDescription: {
-      fontSize: '14px',
-      color: '#64748b',
-      lineHeight: '1.4',
-    },
-    
-    productCode: {
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#475569',
-      fontFamily: 'Monaco, Consolas, monospace',
-      background: 'rgba(0, 0, 0, 0.05)',
-      padding: '4px 8px',
-      borderRadius: '6px',
-      display: 'inline-block',
-    },
-    
-    price: {
-      fontSize: '16px',
-      fontWeight: '700',
-      color: '#059669',
-    },
-    
-    stock: {
-      fontSize: '16px',
-      fontWeight: '600',
-      color: '#1e293b',
-    },
-    
-    statusBadge: {
-      padding: '8px 16px',
-      borderRadius: '12px',
-      fontSize: '12px',
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      display: 'inline-block',
-      letterSpacing: '0.05em',
-    },
-    
-    actionButton: {
-      background: 'none',
-      border: 'none',
-      color: '#6366f1',
-      fontWeight: '600',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      transition: 'all 0.3s ease',
-      marginRight: '8px',
-    },
-    
-    deleteButton: {
-      background: 'none',
-      border: 'none',
-      color: '#dc2626',
-      fontWeight: '600',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      transition: 'all 0.3s ease',
-    },
-    
-    emptyState: {
-      textAlign: 'center',
-      padding: '64px 32px',
-      color: '#64748b',
-      fontSize: '16px',
-      fontStyle: 'italic',
-    },
-    
-    loadingContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      gap: '24px',
-    },
-    
-    loadingSpinner: {
-      width: '64px',
-      height: '64px',
-      border: '4px solid rgba(102, 126, 234, 0.2)',
-      borderTop: '4px solid #667eea',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-    },
-    
-    loadingText: {
-      fontSize: '18px',
-      fontWeight: '500',
-      color: '#64748b',
-    },
-    
-    errorContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      gap: '24px',
-    },
-    
-    errorText: {
-      fontSize: '20px',
-      fontWeight: '600',
-      color: '#dc2626',
-      textAlign: 'center',
-      maxWidth: '600px',
-    },
-    
-    retryButton: {
-      background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '12px 24px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-    },
-
-    debugInfo: {
-      marginBottom: '20px',
-      padding: '15px',
-      background: '#f8fafc',
-      borderRadius: '8px',
-      border: '1px solid #e2e8f0',
-      fontSize: '14px',
-    },
-  };
-
-  // Add animations
-  React.useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      .product-row:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.03)) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-      }
-      
-      .add-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
-      }
-      
-      .search-input:focus {
-        border-color: #667eea !important;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
-      }
-      
-      .action-button:hover {
-        background: rgba(99, 102, 241, 0.1) !important;
-        color: #4f46e5 !important;
-      }
-      
-      .delete-button:hover {
-        background: rgba(220, 38, 38, 0.1) !important;
-        color: #b91c1c !important;
-      }
-    `;
-    
-    if (!document.head.querySelector('#product-management-styles')) {
-      styleElement.id = 'product-management-styles';
-      document.head.appendChild(styleElement);
-    }
-
-    return () => {
-      const existingStyles = document.head.querySelector('#product-management-styles');
-      if (existingStyles) {
-        existingStyles.remove();
-      }
-    };
-  }, []);
-
   if (loading) {
     return (
-      <div style={premiumStyles.container}>
-        <div style={premiumStyles.loadingContainer}>
-          <div style={premiumStyles.loadingSpinner}></div>
-          <div style={premiumStyles.loadingText}>Loading products...</div>
+      <div className="product-management-container">
+        <div className="product-loading-container">
+          <div className="product-loading-spinner"></div>
+          <div className="product-loading-text">Loading products...</div>
         </div>
       </div>
     );
@@ -567,20 +240,12 @@ const ProductManagementPage = () => {
 
   if (error) {
     return (
-      <div style={premiumStyles.container}>
-        <div style={premiumStyles.errorContainer}>
-          <div style={premiumStyles.errorText}>{error}</div>
+      <div className="product-management-container">
+        <div className="product-error-container">
+          <div className="product-error-text">{error}</div>
           <button
-            style={premiumStyles.retryButton}
+            className="product-retry-button"
             onClick={() => fetchProducts()}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-            }}
           >
             Retry
           </button>
@@ -590,31 +255,12 @@ const ProductManagementPage = () => {
   }
 
   return (
-    <div style={premiumStyles.container}>
-      {/* Debug info - remove in production */}
-      <div style={premiumStyles.debugInfo}>
-        <p><strong>Debug Information:</strong></p>
-        <p>API Base URL: {api.defaults.baseURL || 'Not configured'}</p>
-        <p>API Timeout: {api.defaults.timeout / 1000}s</p>
-        <p>Products loaded: {products.length}</p>
-        <p>Filtered products: {filteredProducts.length}</p>
-        <p>Search term: "{searchTerm}"</p>
-        {products.length > 0 && (
-          <details style={{ marginTop: '10px' }}>
-            <summary>First product data:</summary>
-            <pre style={{ fontSize: '12px', marginTop: '5px', maxHeight: '200px', overflow: 'auto' }}>
-              {JSON.stringify(products[0], null, 2)}
-            </pre>
-          </details>
-        )}
-      </div>
-
+    <div className="product-management-container">
       {/* Header */}
-      <div style={premiumStyles.header}>
-        <h1 style={premiumStyles.title}>Product Management</h1>
+      <div className="product-management-header">
+        <h1 className="product-management-title">Product Management</h1>
         <button
-          className="add-button"
-          style={premiumStyles.addButton}
+          className="product-add-button"
           onClick={() => {
             setSelectedProduct(null);
             setShowModal(true);
@@ -625,88 +271,78 @@ const ProductManagementPage = () => {
       </div>
 
       {/* Search */}
-      <div style={premiumStyles.searchContainer}>
+      <div className="product-search-container">
         <input
-          className="search-input"
           type="text"
           placeholder="Search products by name or code..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={premiumStyles.searchInput}
+          className="product-search-input"
         />
       </div>
 
       {/* Products Table */}
-      <div style={premiumStyles.tableContainer}>
-        <table style={premiumStyles.table}>
-          <thead style={premiumStyles.tableHeader}>
+      <div className="product-table-container">
+        <table className="product-table">
+          <thead className="product-table-header">
             <tr>
-              <th style={premiumStyles.headerCell}>Product</th>
-              <th style={premiumStyles.headerCell}>Code</th>
-              <th style={premiumStyles.headerCell}>Price</th>
-              <th style={premiumStyles.headerCell}>Stock</th>
-              <th style={premiumStyles.headerCell}>Status</th>
-              <th style={premiumStyles.headerCell}>Actions</th>
+              <th className="product-header-cell">Product</th>
+              <th className="product-header-cell">Code</th>
+              <th className="product-header-cell">Price</th>
+              <th className="product-header-cell">Stock</th>
+              <th className="product-header-cell">Status</th>
+              <th className="product-header-cell">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product) => {
                 const status = getStockStatus(product);
-                const statusColors = getStockStatusColors(status);
                 
                 return (
                   <tr 
                     key={product.id || product.code} 
-                    className="product-row"
-                    style={premiumStyles.tableRow}
+                    className="product-table-row"
                   >
-                    <td style={premiumStyles.tableCell}>
-                      <div style={premiumStyles.productInfo}>
-                        <div style={premiumStyles.productName}>
+                    <td className="product-table-cell">
+                      <div className="product-info">
+                        <div className="product-name">
                           {product.name || 'N/A'}
                         </div>
-                        <div style={premiumStyles.productDescription}>
+                        <div className="product-description">
                           {product.description || 'No description'}
                         </div>
                       </div>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span style={premiumStyles.productCode}>
+                    <td className="product-table-cell">
+                      <span className="product-code">
                         {product.code || 'N/A'}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span style={premiumStyles.price}>
+                    <td className="product-table-cell">
+                      <span className="product-price">
                         Rs.{product.fixedPrice || 0}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span style={premiumStyles.stock}>
+                    <td className="product-table-cell">
+                      <span className="product-stock">
                         {product.currentStock || 0}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
-                      <span 
-                        style={{
-                          ...premiumStyles.statusBadge,
-                          ...statusColors
-                        }}
-                      >
+                    <td className="product-table-cell">
+                      <span className={`product-status-badge status-${status}`}>
                         {status.replace('-', ' ')}
                       </span>
                     </td>
-                    <td style={premiumStyles.tableCell}>
+                    <td className="product-table-cell">
                       <button
-                        className="action-button"
-                        style={premiumStyles.actionButton}
+                        className="product-action-button"
                         onClick={() => handleEdit(product)}
                       >
                         Edit
                       </button>
                       <button
-                        className="delete-button"
-                        style={premiumStyles.deleteButton}
+                        className="product-delete-button"
                         onClick={() => handleDelete(product.id)}
                       >
                         Delete
@@ -717,7 +353,7 @@ const ProductManagementPage = () => {
               })
             ) : (
               <tr>
-                <td colSpan="6" style={premiumStyles.emptyState}>
+                <td colSpan="6" className="product-empty-state">
                   {searchTerm 
                     ? 'No products found matching your search.' 
                     : 'No products available. Click "Add New Product" to get started.'}
@@ -782,149 +418,6 @@ const ProductModal = ({ product, onSave, onClose, saving }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const modalStyles = {
-    overlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.6)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px',
-    },
-    
-    modal: {
-      background: 'rgba(255, 255, 255, 0.98)',
-      backdropFilter: 'blur(20px)',
-      borderRadius: '24px',
-      padding: '32px',
-      width: '100%',
-      maxWidth: '500px',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 25px 60px rgba(0, 0, 0, 0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      position: 'relative',
-    },
-    
-    title: {
-      fontSize: '24px',
-      fontWeight: '700',
-      color: '#1e293b',
-      marginBottom: '24px',
-      textAlign: 'center',
-    },
-    
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '20px',
-    },
-    
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-    },
-    
-    label: {
-      fontSize: '14px',
-      fontWeight: '600',
-      color: '#374151',
-      letterSpacing: '0.025em',
-    },
-    
-    input: {
-      padding: '16px',
-      fontSize: '16px',
-      border: '2px solid rgba(0, 0, 0, 0.1)',
-      borderRadius: '12px',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      background: 'rgba(255, 255, 255, 0.8)',
-    },
-    
-    inputError: {
-      borderColor: '#dc2626',
-      background: 'rgba(239, 68, 68, 0.05)',
-    },
-    
-    textarea: {
-      padding: '16px',
-      fontSize: '16px',
-      border: '2px solid rgba(0, 0, 0, 0.1)',
-      borderRadius: '12px',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-      background: 'rgba(255, 255, 255, 0.8)',
-      minHeight: '80px',
-      resize: 'vertical',
-    },
-    
-    errorText: {
-      fontSize: '12px',
-      color: '#dc2626',
-      marginTop: '4px',
-    },
-    
-    buttonGroup: {
-      display: 'flex',
-      gap: '12px',
-      marginTop: '24px',
-    },
-    
-    saveButton: {
-      flex: 1,
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '16px',
-      color: 'white',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-    },
-    
-    saveButtonDisabled: {
-      background: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
-      cursor: 'not-allowed',
-      boxShadow: '0 4px 15px rgba(156, 163, 175, 0.3)',
-    },
-    
-    cancelButton: {
-      flex: 1,
-      background: 'rgba(107, 114, 128, 0.1)',
-      border: '2px solid rgba(107, 114, 128, 0.2)',
-      borderRadius: '12px',
-      padding: '16px',
-      color: '#6b7280',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-    },
-    
-    loadingSpinner: {
-      width: '20px',
-      height: '20px',
-      border: '2px solid rgba(255, 255, 255, 0.3)',
-      borderTop: '2px solid white',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-    },
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -963,187 +456,131 @@ const ProductModal = ({ product, onSave, onClose, saving }) => {
     }
   };
 
-  // Add focus styles
-  React.useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      .modal-input:focus {
-        border-color: #667eea !important;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
-      }
-      
-      .save-button:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
-      }
-      
-      .cancel-button:hover {
-        background: rgba(107, 114, 128, 0.15) !important;
-        border-color: rgba(107, 114, 128, 0.3) !important;
-      }
-    `;
-    
-    if (!document.head.querySelector('#product-modal-styles')) {
-      styleElement.id = 'product-modal-styles';
-      document.head.appendChild(styleElement);
-    }
-
-    return () => {
-      const existingStyles = document.head.querySelector('#product-modal-styles');
-      if (existingStyles) {
-        existingStyles.remove();
-      }
-    };
-  }, []);
-
   return (
-    <div style={modalStyles.overlay} onClick={onClose}>
-      <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 style={modalStyles.title}>
+    <div className="product-modal-overlay" onClick={onClose}>
+      <div className="product-modal" onClick={(e) => e.stopPropagation()}>
+        <h2 className="product-modal-title">
           {product ? 'Edit Product' : 'Add New Product'}
         </h2>
         
-        <form onSubmit={handleSubmit} style={modalStyles.form}>
-          <div style={modalStyles.inputGroup}>
-            <label style={modalStyles.label}>Product Name *</label>
+        <form onSubmit={handleSubmit} className="product-modal-form">
+          <div className="product-input-group">
+            <label className="product-modal-label">Product Name *</label>
             <input
-              className="modal-input"
               type="text"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              style={{
-                ...modalStyles.input,
-                ...(validationErrors.name ? modalStyles.inputError : {})
-              }}
+              className={`product-modal-input ${validationErrors.name ? 'product-input-error' : ''}`}
               required
               placeholder="Enter product name"
               disabled={saving}
             />
             {validationErrors.name && (
-              <span style={modalStyles.errorText}>{validationErrors.name}</span>
+              <span className="product-error-text">{validationErrors.name}</span>
             )}
           </div>
 
-          <div style={modalStyles.inputGroup}>
-            <label style={modalStyles.label}>Product Code *</label>
+          <div className="product-input-group">
+            <label className="product-modal-label">Product Code *</label>
             <input
-              className="modal-input"
               type="text"
               value={formData.code}
               onChange={(e) => handleInputChange('code', e.target.value)}
-              style={{
-                ...modalStyles.input,
-                ...(validationErrors.code ? modalStyles.inputError : {})
-              }}
+              className={`product-modal-input ${validationErrors.code ? 'product-input-error' : ''}`}
               required
               placeholder="Enter product code"
               disabled={saving}
             />
             {validationErrors.code && (
-              <span style={modalStyles.errorText}>{validationErrors.code}</span>
+              <span className="product-error-text">{validationErrors.code}</span>
             )}
           </div>
 
-          <div style={modalStyles.inputGroup}>
-            <label style={modalStyles.label}>Description</label>
+          <div className="product-input-group">
+            <label className="product-modal-label">Description</label>
             <textarea
-              className="modal-input"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              style={modalStyles.textarea}
+              className="product-modal-textarea"
               placeholder="Enter product description"
               disabled={saving}
             />
           </div>
 
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Price (Rs) *</label>
+          <div className="product-input-group-grid">
+            <div className="product-input-group">
+              <label className="product-modal-label">Price (Rs) *</label>
               <input
-                className="modal-input"
                 type="number"
                 step="0.01"
                 min="0"
                 value={formData.fixedPrice}
                 onChange={(e) => handleInputChange('fixedPrice', e.target.value)}
-                style={{
-                  ...modalStyles.input,
-                  ...(validationErrors.fixedPrice ? modalStyles.inputError : {})
-                }}
+                className={`product-modal-input ${validationErrors.fixedPrice ? 'product-input-error' : ''}`}
                 required
                 placeholder="0.00"
                 disabled={saving}
               />
               {validationErrors.fixedPrice && (
-                <span style={modalStyles.errorText}>{validationErrors.fixedPrice}</span>
+                <span className="product-error-text">{validationErrors.fixedPrice}</span>
               )}
             </div>
 
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Current Stock *</label>
+            <div className="product-input-group">
+              <label className="product-modal-label">Current Stock *</label>
               <input
-                className="modal-input"
                 type="number"
                 min="0"
                 value={formData.currentStock}
                 onChange={(e) => handleInputChange('currentStock', e.target.value)}
-                style={{
-                  ...modalStyles.input,
-                  ...(validationErrors.currentStock ? modalStyles.inputError : {})
-                }}
+                className={`product-modal-input ${validationErrors.currentStock ? 'product-input-error' : ''}`}
                 required
                 placeholder="0"
                 disabled={saving}
               />
               {validationErrors.currentStock && (
-                <span style={modalStyles.errorText}>{validationErrors.currentStock}</span>
+                <span className="product-error-text">{validationErrors.currentStock}</span>
               )}
             </div>
           </div>
 
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Low Stock Threshold</label>
+          <div className="product-input-group-grid">
+            <div className="product-input-group">
+              <label className="product-modal-label">Low Stock Threshold</label>
               <input
-                className="modal-input"
                 type="number"
                 min="0"
                 value={formData.lowStockThreshold}
                 onChange={(e) => handleInputChange('lowStockThreshold', e.target.value)}
-                style={modalStyles.input}
+                className="product-modal-input"
                 placeholder="10"
                 disabled={saving}
               />
             </div>
 
-            <div style={modalStyles.inputGroup}>
-              <label style={modalStyles.label}>Discount (%)</label>
+            <div className="product-input-group">
+              <label className="product-modal-label">Discount (%)</label>
               <input
-                className="modal-input"
                 type="number"
                 step="0.01"
                 min="0"
                 max="100"
                 value={formData.discount}
                 onChange={(e) => handleInputChange('discount', e.target.value)}
-                style={modalStyles.input}
+                className="product-modal-input"
                 placeholder="0.00"
                 disabled={saving}
               />
             </div>
           </div>
 
-          <div style={modalStyles.buttonGroup}>
+          <div className="product-modal-button-group">
             <button
               type="submit"
-              className="save-button"
-              style={{
-                ...modalStyles.saveButton,
-                ...(saving ? modalStyles.saveButtonDisabled : {})
-              }}
+              className="product-modal-save-button"
               disabled={saving}
             >
-              {saving && <div style={modalStyles.loadingSpinner}></div>}
+              {saving && <div className="product-modal-loading-spinner"></div>}
               {saving 
                 ? (product ? 'Updating...' : 'Creating...') 
                 : (product ? 'Update Product' : 'Create Product')
@@ -1151,8 +588,7 @@ const ProductModal = ({ product, onSave, onClose, saving }) => {
             </button>
             <button
               type="button"
-              className="cancel-button"
-              style={modalStyles.cancelButton}
+              className="product-modal-cancel-button"
               onClick={onClose}
               disabled={saving}
             >

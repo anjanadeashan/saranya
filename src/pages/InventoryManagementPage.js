@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import './InventoryManagement.css'; // Import the CSS file
 
 // API configuration
 const API_BASE_URL = 'http://localhost:8080/api';
+
+// Currency formatter for Sri Lankan Rupees
+const formatCurrency = (amount) => {
+  if (amount == null || isNaN(amount)) return 'Rs. 0.00';
+  return `Rs. ${parseFloat(amount).toLocaleString('en-LK', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
 
 // API service for backend integration
 const api = {
@@ -284,22 +294,6 @@ const InventoryManagementPage = () => {
     }
   };
 
-  const getMovementTypeStyle = (type) => {
-    if (type === 'IN') {
-      return {
-        color: '#059669',
-        background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.2))',
-        border: '1px solid rgba(5, 150, 105, 0.3)'
-      };
-    } else {
-      return {
-        color: '#dc2626',
-        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.2))',
-        border: '1px solid rgba(220, 38, 38, 0.3)'
-      };
-    }
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -317,50 +311,10 @@ const InventoryManagementPage = () => {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff8c42 100%)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-      }}>
-        <style>
-          {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            @keyframes pulse {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.5; }
-            }
-          `}
-        </style>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.25)',
-          backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '24px',
-          padding: '50px 70px',
-          textAlign: 'center',
-          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.2)'
-        }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            border: '5px solid rgba(255, 255, 255, 0.3)',
-            borderTop: '5px solid #ffffff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 25px'
-          }} />
-          <div style={{
-            fontSize: '20px',
-            color: '#ffffff',
-            fontWeight: '600',
-            animation: 'pulse 2s ease-in-out infinite'
-          }}>Loading inventory...</div>
+      <div className="inventory-loading-container">
+        <div className="inventory-loading-card">
+          <div className="inventory-loading-spinner"></div>
+          <div className="inventory-loading-text">Loading inventory...</div>
         </div>
       </div>
     );
@@ -368,48 +322,13 @@ const InventoryManagementPage = () => {
 
   if (error) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff8c42 100%)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-      }}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.25)',
-          backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '24px',
-          padding: '50px 70px',
-          textAlign: 'center',
-          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.2)'
-        }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '20px'
-          }}>⚠️</div>
-          <div style={{
-            color: '#ffffff',
-            fontSize: '20px',
-            marginBottom: '25px',
-            fontWeight: '600'
-          }}>{error}</div>
+      <div className="inventory-error-container">
+        <div className="inventory-error-card">
+          <div className="inventory-error-icon">⚠️</div>
+          <div className="inventory-error-text">{error}</div>
           <button 
             onClick={fetchData}
-            style={{
-              padding: '15px 30px',
-              background: 'linear-gradient(135deg, #ffffff, #f1f5f9)',
-              color: '#ff6b35',
-              border: 'none',
-              borderRadius: '14px',
-              cursor: 'pointer',
-              fontWeight: '700',
-              fontSize: '16px',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 8px 25px rgba(255, 255, 255, 0.3)'
-            }}
+            className="inventory-retry-button"
           >
             Retry
           </button>
@@ -419,194 +338,41 @@ const InventoryManagementPage = () => {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff8c42 100%)',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      padding: '40px 20px'
-    }}>
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-        `}
-      </style>
-      
-      <div style={{
-        maxWidth: '1600px',
-        margin: '0 auto',
-        animation: 'fadeIn 0.8s ease-out'
-      }}>
+    <div className="inventory-management-container">
+      <div className="inventory-content-wrapper">
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '40px',
-          flexWrap: 'wrap',
-          gap: '20px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{
-              fontSize: '3rem',
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '16px',
-              padding: '15px',
-              backdropFilter: 'blur(10px)'
-            }}>📦</div>
-            <h1 style={{
-              fontSize: '2.5rem',
-              fontWeight: '800',
-              color: '#ffffff',
-              margin: '0',
-              textShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-              background: 'linear-gradient(135deg, #ffffff, #f1f5f9)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
+        <div className="inventory-management-header">
+          <div className="inventory-header-left">
+            <div className="inventory-header-icon">📦</div>
+            <h1 className="inventory-management-title">
               Inventory Management
             </h1>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            style={{
-              padding: '16px 32px',
-              background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
-              color: '#ff6b35',
-              border: 'none',
-              borderRadius: '16px',
-              cursor: 'pointer',
-              fontWeight: '700',
-              fontSize: '16px',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 10px 30px rgba(255, 255, 255, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}
+            className="inventory-add-button"
           >
-            <span style={{fontSize: '20px'}}>➕</span>
+            <span className="inventory-add-icon">➕</span>
             Add Movement
           </button>
         </div>
 
-        {/* Debug Info */}
-        <div style={{
-          marginBottom: '20px',
-          padding: '20px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          color: '#ffffff',
-          fontSize: '14px',
-          fontFamily: 'monospace'
-        }}>
-          <div><strong>Debug Info:</strong></div>
-          <div>Inventory items count: {inventory.length}</div>
-          <div>Filtered items count: {filteredInventory.length}</div>
-          <div>Products count: {products.length}</div>
-          <div>Suppliers count: {suppliers.length}</div>
-          <div>Search term: "{searchTerm}"</div>
-          <div>Filter type: {filterType}</div>
-          <div>API Base URL: {API_BASE_URL}</div>
-          {inventory.length > 0 && (
-            <details style={{ marginTop: '10px' }}>
-              <summary style={{ cursor: 'pointer' }}>First inventory item structure</summary>
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                wordBreak: 'break-word',
-                fontSize: '12px',
-                marginTop: '10px',
-                background: 'rgba(0,0,0,0.2)',
-                padding: '10px',
-                borderRadius: '8px'
-              }}>
-                {JSON.stringify(inventory[0], null, 2)}
-              </pre>
-            </details>
-          )}
-          {products.length > 0 && (
-            <details style={{ marginTop: '10px' }}>
-              <summary style={{ cursor: 'pointer' }}>First product structure</summary>
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                wordBreak: 'break-word',
-                fontSize: '12px',
-                marginTop: '10px',
-                background: 'rgba(0,0,0,0.2)',
-                padding: '10px',
-                borderRadius: '8px'
-              }}>
-                {JSON.stringify(products[0], null, 2)}
-              </pre>
-            </details>
-          )}
-        </div>
-
         {/* Filters */}
-        <div style={{
-          marginBottom: '40px',
-          display: 'flex',
-          gap: '20px',
-          flexWrap: 'wrap',
-          animation: 'slideIn 1s ease-out'
-        }}>
-          <div style={{
-            flex: '1',
-            minWidth: '300px',
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(15px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '18px',
-            padding: '8px'
-          }}>
+        <div className="inventory-filters">
+          <div className="inventory-search-container">
             <input
               type="text"
               placeholder="Search by product, code, or reference..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '18px 24px',
-                border: 'none',
-                borderRadius: '14px',
-                background: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '16px',
-                fontWeight: '500',
-                color: '#1f2937',
-                outline: 'none',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'
-              }}
+              className="inventory-search-input"
             />
           </div>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(15px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '18px',
-            padding: '8px'
-          }}>
+          <div className="inventory-filter-container">
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              style={{
-                padding: '18px 24px',
-                border: 'none',
-                borderRadius: '14px',
-                background: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '16px',
-                fontWeight: '500',
-                color: '#1f2937',
-                outline: 'none',
-                cursor: 'pointer',
-                minWidth: '200px'
-              }}
+              className="inventory-filter-select"
             >
               <option value="ALL">All Movements</option>
               <option value="IN">Stock In</option>
@@ -616,38 +382,13 @@ const InventoryManagementPage = () => {
         </div>
 
         {/* Inventory Table */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '24px',
-          overflow: 'hidden',
-          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.2)'
-        }}>
-          <div style={{
-            overflowX: 'auto'
-          }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse'
-            }}>
-              <thead>
-                <tr style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  {['Date', 'Product', 'Type', 'Quantity', 'Reference', 'Supplier', 'Actions'].map((header, index) => (
-                    <th key={index} style={{
-                      padding: '24px 28px',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: '800',
-                      color: '#ffffff',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
-                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                    }}>
+        <div className="inventory-table-container">
+          <div className="inventory-table-wrapper">
+            <table className="inventory-table">
+              <thead className="inventory-table-header">
+                <tr>
+                  {['Date', 'Product', 'Type', 'Quantity', 'Unit Price', 'Total Value', 'Reference', 'Supplier', 'Actions'].map((header, index) => (
+                    <th key={index} className="inventory-header-cell">
                       {header}
                     </th>
                   ))}
@@ -656,132 +397,60 @@ const InventoryManagementPage = () => {
               <tbody>
                 {filteredInventory.length > 0 ? (
                   filteredInventory.map((item, index) => (
-                    <tr key={item.id || index} style={{
-                      background: index % 2 === 0 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.04)',
-                      transition: 'all 0.3s ease',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <div style={{
-                          fontSize: '15px',
-                          color: '#ffffff',
-                          fontWeight: '600'
-                        }}>
+                    <tr key={item.id || index} className="inventory-table-row">
+                      <td className="inventory-table-cell">
+                        <div className="inventory-date">
                           {formatDate(item.date)}
                         </div>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <div>
-                          <div style={{
-                            fontSize: '16px',
-                            fontWeight: '700',
-                            color: '#ffffff',
-                            marginBottom: '4px'
-                          }}>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-product-info">
+                          <div className="inventory-product-name">
                             {item.product?.name || 'Unknown Product'}
                           </div>
-                          <div style={{
-                            fontSize: '14px',
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            fontWeight: '500'
-                          }}>
+                          <div className="inventory-product-code">
                             {item.product?.code || 'N/A'}
-                          </div>
-                          <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)' }}>
-                            Product ID: {item.productId || item.product?.id || 'None'}
                           </div>
                         </div>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          padding: '8px 16px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          borderRadius: '20px',
-                          alignItems: 'center',
-                          gap: '6px',
-                          ...getMovementTypeStyle(item.movementType)
-                        }}>
+                      <td className="inventory-table-cell">
+                        <span className={`inventory-movement-badge ${
+                          item.movementType === 'IN' ? 'inventory-movement-in' : 'inventory-movement-out'
+                        }`}>
                           {item.movementType === 'IN' ? 'Stock In' : 'Stock Out'}
                         </span>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <div style={{
-                          fontSize: '16px',
-                          color: '#ffffff',
-                          fontWeight: '700',
-                          background: 'rgba(255, 255, 255, 0.1)',
-                          padding: '8px 12px',
-                          borderRadius: '10px',
-                          display: 'inline-block'
-                        }}>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-quantity">
                           {item.quantity?.toLocaleString() || '0'}
                         </div>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <div style={{
-                          fontSize: '15px',
-                          color: 'rgba(255, 255, 255, 0.9)',
-                          fontWeight: '500',
-                          fontFamily: 'Monaco, monospace'
-                        }}>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-unit-price">
+                          {item.unitPrice ? formatCurrency(item.unitPrice) : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-total-value">
+                          {item.quantity && item.unitPrice 
+                            ? formatCurrency(item.quantity * item.unitPrice) 
+                            : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-reference">
                           {item.reference || 'N/A'}
                         </div>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
-                        <div>
-                          <div style={{
-                            fontSize: '15px',
-                            color: '#ffffff',
-                            fontWeight: '600'
-                          }}>
-                            {item.supplier?.name || 'N/A'}
-                          </div>
-                          <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)' }}>
-                            Supplier ID: {item.supplierId || item.supplier?.id || 'None'}
-                          </div>
+                      <td className="inventory-table-cell">
+                        <div className="inventory-supplier-name">
+                          {item.supplier?.name || 'N/A'}
                         </div>
                       </td>
-                      <td style={{
-                        padding: '28px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}>
+                      <td className="inventory-table-cell">
                         <button
                           onClick={() => handleDelete(item.id)}
-                          style={{
-                            padding: '10px 20px',
-                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            transition: 'all 0.3s ease',
-                            boxShadow: '0 6px 20px rgba(239, 68, 68, 0.4)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
+                          className="inventory-delete-button"
                         >
                           Delete
                         </button>
@@ -790,14 +459,8 @@ const InventoryManagementPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{
-                      padding: '80px 28px',
-                      textAlign: 'center',
-                      color: 'rgba(255, 255, 255, 0.8)',
-                      fontSize: '18px',
-                      fontWeight: '600'
-                    }}>
-                      <div style={{ fontSize: '64px', marginBottom: '20px' }}>📭</div>
+                    <td colSpan="9" className="inventory-empty-state">
+                      <div className="inventory-empty-icon">📭</div>
                       {searchTerm || filterType !== 'ALL' 
                         ? 'No inventory movements found matching your criteria.' 
                         : 'No inventory movements available. Click "Add Movement" to get started.'}
@@ -829,6 +492,7 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
     productId: '',
     movementType: 'IN',
     quantity: '',
+    unitPrice: '',
     supplierId: '',
     reference: '',
     date: new Date().toISOString().split('T')[0]
@@ -846,6 +510,10 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
     
     if (!formData.quantity || parseInt(formData.quantity) <= 0) {
       errors.quantity = 'Please enter a valid quantity';
+    }
+    
+    if (formData.unitPrice && parseFloat(formData.unitPrice) < 0) {
+      errors.unitPrice = 'Unit price cannot be negative';
     }
     
     if (formData.movementType === 'IN' && !formData.supplierId) {
@@ -875,6 +543,7 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
         productId: parseInt(formData.productId),
         movementType: formData.movementType,
         quantity: parseInt(formData.quantity),
+        unitPrice: formData.unitPrice ? parseFloat(formData.unitPrice) : null,
         supplierId: formData.supplierId ? parseInt(formData.supplierId) : null,
         reference: formData.reference || null,
         date: formData.date + 'T00:00:00'
@@ -907,100 +576,29 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
     return products.find(p => p.id === parseInt(formData.productId));
   };
 
-  const getSelectedSupplier = () => {
-    return suppliers.find(s => s.id === parseInt(formData.supplierId));
+  const calculateTotalValue = () => {
+    const quantity = parseFloat(formData.quantity) || 0;
+    const unitPrice = parseFloat(formData.unitPrice) || 0;
+    return quantity * unitPrice;
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: '0',
-      background: 'rgba(0, 0, 0, 0.7)',
-      backdropFilter: 'blur(12px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: '1000',
-      padding: '20px',
-      animation: 'fadeIn 0.3s ease-out'
-    }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(25px)',
-        border: '2px solid rgba(255, 107, 53, 0.3)',
-        borderRadius: '28px',
-        padding: '50px',
-        width: '100%',
-        maxWidth: '650px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        boxShadow: '0 50px 100px rgba(255, 107, 53, 0.3)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-      }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '40px'
-        }}>
-          <div style={{
-            fontSize: '4rem',
-            marginBottom: '15px'
-          }}>📦</div>
-          <h2 style={{
-            fontSize: '28px',
-            fontWeight: '800',
-            color: '#1f2937',
-            background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            margin: '0'
-          }}>
+    <div className="inventory-modal-overlay">
+      <div className="inventory-modal">
+        <div className="inventory-modal-header">
+          <div className="inventory-modal-icon">📦</div>
+          <h2 className="inventory-modal-title">
             Add Inventory Movement
           </h2>
         </div>
-
-        {/* Debug section for form data */}
-        <div style={{
-          marginBottom: '20px',
-          padding: '15px',
-          background: '#f8fafc',
-          borderRadius: '8px',
-          fontSize: '12px',
-          fontFamily: 'monospace'
-        }}>
-          <strong>Form Debug Info:</strong>
-          <div>Selected Product ID: {formData.productId}</div>
-          <div>Selected Product: {getSelectedProduct()?.name || 'None'}</div>
-          <div>Selected Supplier ID: {formData.supplierId}</div>
-          <div>Selected Supplier: {getSelectedSupplier()?.name || 'None'}</div>
-          <div>Available Products: {products.length}</div>
-          <div>Available Suppliers: {suppliers.length}</div>
-        </div>
         
-        <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '28px'}}>
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '15px',
-              fontWeight: '700',
-              marginBottom: '10px',
-              color: '#374151'
-            }}>Product *</label>
+        <form onSubmit={handleSubmit} className="inventory-modal-form">
+          <div className="inventory-form-group">
+            <label className="inventory-form-label required">Product</label>
             <select
               value={formData.productId}
               onChange={(e) => handleChange('productId', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                border: `2px solid ${validationErrors.productId ? '#dc2626' : 'rgba(255, 107, 53, 0.2)'}`,
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#1f2937',
-                background: '#ffffff',
-                transition: 'all 0.3s ease',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              className={`inventory-form-select ${validationErrors.productId ? 'error' : ''}`}
               required
               disabled={saving}
             >
@@ -1012,37 +610,19 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
               ))}
             </select>
             {validationErrors.productId && (
-              <div style={{ color: '#dc2626', fontSize: '14px', marginTop: '5px' }}>
+              <div className="inventory-validation-error">
                 {validationErrors.productId}
               </div>
             )}
           </div>
           
-          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px'}}>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '15px',
-                fontWeight: '700',
-                marginBottom: '10px',
-                color: '#374151'
-              }}>Movement Type *</label>
+          <div className="inventory-form-row">
+            <div className="inventory-form-group">
+              <label className="inventory-form-label required">Movement Type</label>
               <select
                 value={formData.movementType}
                 onChange={(e) => handleChange('movementType', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  border: '2px solid rgba(255, 107, 53, 0.2)',
-                  borderRadius: '14px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  background: '#ffffff',
-                  transition: 'all 0.3s ease',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                className="inventory-form-select"
                 required
                 disabled={saving}
               >
@@ -1050,121 +630,84 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
                 <option value="OUT">Stock Out</option>
               </select>
               {formData.movementType === 'OUT' && getSelectedProduct() && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '12px',
-                  background: 'rgba(255, 193, 7, 0.1)',
-                  border: '1px solid rgba(255, 193, 7, 0.3)',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  color: '#856404'
-                }}>
+                <div className="inventory-stock-warning">
                   Warning: Current stock is {getSelectedProduct().currentStock || 0}. 
                   Ensure sufficient stock is available.
                 </div>
               )}
             </div>
             
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '15px',
-                fontWeight: '700',
-                marginBottom: '10px',
-                color: '#374151'
-              }}>Quantity *</label>
+            <div className="inventory-form-group">
+              <label className="inventory-form-label required">Quantity</label>
               <input
                 type="number"
                 min="1"
                 value={formData.quantity}
                 onChange={(e) => handleChange('quantity', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  border: `2px solid ${validationErrors.quantity ? '#dc2626' : 'rgba(255, 107, 53, 0.2)'}`,
-                  borderRadius: '14px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  background: '#ffffff',
-                  transition: 'all 0.3s ease',
-                  outline: 'none'
-                }}
+                className={`inventory-form-input ${validationErrors.quantity ? 'error' : ''}`}
                 required
                 disabled={saving}
               />
               {validationErrors.quantity && (
-                <div style={{ color: '#dc2626', fontSize: '14px', marginTop: '5px' }}>
+                <div className="inventory-validation-error">
                   {validationErrors.quantity}
                 </div>
               )}
             </div>
           </div>
+
+          <div className="inventory-form-row">
+            <div className="inventory-form-group">
+              <label className="inventory-form-label">Unit Price</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.unitPrice}
+                onChange={(e) => handleChange('unitPrice', e.target.value)}
+                className={`inventory-form-input ${validationErrors.unitPrice ? 'error' : ''}`}
+                placeholder="0.00"
+                disabled={saving}
+              />
+              {validationErrors.unitPrice && (
+                <div className="inventory-validation-error">
+                  {validationErrors.unitPrice}
+                </div>
+              )}
+            </div>
+
+            <div className="inventory-form-group">
+              <label className="inventory-form-label">Total Value</label>
+              <div className="inventory-total-value-display">
+                {formatCurrency(calculateTotalValue())}
+              </div>
+            </div>
+          </div>
           
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '15px',
-              fontWeight: '700',
-              marginBottom: '10px',
-              color: '#374151'
-            }}>Date *</label>
+          <div className="inventory-form-group">
+            <label className="inventory-form-label required">Date</label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => handleChange('date', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                border: `2px solid ${validationErrors.date ? '#dc2626' : 'rgba(255, 107, 53, 0.2)'}`,
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#1f2937',
-                background: '#ffffff',
-                transition: 'all 0.3s ease',
-                outline: 'none'
-              }}
+              className={`inventory-form-input ${validationErrors.date ? 'error' : ''}`}
               required
               disabled={saving}
             />
             {validationErrors.date && (
-              <div style={{ color: '#dc2626', fontSize: '14px', marginTop: '5px' }}>
+              <div className="inventory-validation-error">
                 {validationErrors.date}
               </div>
             )}
           </div>
           
           {formData.movementType === 'IN' && (
-            <div style={{
-              background: 'rgba(255, 107, 53, 0.05)',
-              padding: '20px',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 107, 53, 0.1)'
-            }}>
-              <label style={{
-                display: 'block',
-                fontSize: '15px',
-                fontWeight: '700',
-                marginBottom: '10px',
-                color: '#374151'
-              }}>Supplier *</label>
+            <div className="inventory-supplier-section">
+              <label className="inventory-form-label required">Supplier</label>
               <select
                 value={formData.supplierId}
                 onChange={(e) => handleChange('supplierId', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  border: `2px solid ${validationErrors.supplierId ? '#dc2626' : 'rgba(255, 107, 53, 0.2)'}`,
-                  borderRadius: '14px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  background: '#ffffff',
-                  transition: 'all 0.3s ease',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                className={`inventory-form-select ${validationErrors.supplierId ? 'error' : ''}`}
                 required
                 disabled={saving}
               >
@@ -1176,68 +719,30 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
                 ))}
               </select>
               {validationErrors.supplierId && (
-                <div style={{ color: '#dc2626', fontSize: '14px', marginTop: '5px' }}>
+                <div className="inventory-validation-error">
                   {validationErrors.supplierId}
                 </div>
               )}
             </div>
           )}
           
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '15px',
-              fontWeight: '700',
-              marginBottom: '10px',
-              color: '#374151'
-            }}>Reference</label>
+          <div className="inventory-form-group">
+            <label className="inventory-form-label">Reference</label>
             <input
               type="text"
               value={formData.reference}
               onChange={(e) => handleChange('reference', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                border: '2px solid rgba(255, 107, 53, 0.2)',
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#1f2937',
-                background: '#ffffff',
-                transition: 'all 0.3s ease',
-                outline: 'none'
-              }}
+              className="inventory-form-input"
               placeholder="PO number, invoice, SO number, etc."
               disabled={saving}
             />
           </div>
           
-          <div style={{
-            display: 'flex',
-            gap: '20px',
-            paddingTop: '30px',
-            borderTop: '2px solid rgba(255, 107, 53, 0.1)'
-          }}>
+          <div className="inventory-modal-buttons">
             <button
               type="submit"
               disabled={saving}
-              style={{
-                flex: '1',
-                padding: '18px 28px',
-                background: saving ? 'linear-gradient(135deg, #9ca3af, #6b7280)' : 'linear-gradient(135deg, #ff6b35, #f7931e)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '16px',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                fontWeight: '800',
-                fontSize: '17px',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 10px 30px rgba(255, 107, 53, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px'
-              }}
+              className="inventory-modal-submit-button"
             >
               {saving ? 'Adding Movement...' : 'Add Movement'}
             </button>
@@ -1245,23 +750,7 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
               type="button"
               onClick={onClose}
               disabled={saving}
-              style={{
-                flex: '1',
-                padding: '18px 28px',
-                background: 'linear-gradient(135deg, #6b7280, #4b5563)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '16px',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                fontWeight: '800',
-                fontSize: '17px',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 10px 30px rgba(107, 114, 128, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px'
-              }}
+              className="inventory-modal-cancel-button"
             >
               Cancel
             </button>
