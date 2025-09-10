@@ -288,7 +288,7 @@ const ProductManagementPage = () => {
             <tr>
               <th className="product-header-cell">Product</th>
               <th className="product-header-cell">Code</th>
-              <th className="product-header-cell">Price</th>
+              <th className="product-header-cell">Cost</th>
               <th className="product-header-cell">Stock</th>
               <th className="product-header-cell">Status</th>
               <th className="product-header-cell">Actions</th>

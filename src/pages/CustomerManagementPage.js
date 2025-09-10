@@ -4,22 +4,71 @@ import './CustomerManagement.css'// Import the CSS file
 // API configuration - update these values for your backend
 const API_BASE_URL = 'http://localhost:8080/api'; // Update this to your backend URL
 
-// Add this helper to avoid ReferenceError and to centralize token retrieval
-function getAuthToken() {
-	// Replace with your actual token logic (localStorage, cookie, etc.)
-	// Example: return localStorage.getItem('token');
-	return null;
-}
+// Authentication helper functions (same as in Dashboard)
+const authUtils = {
+  getToken: () => {
+    // Try multiple storage locations for the token
+    return localStorage.getItem('token') || 
+           localStorage.getItem('authToken') || 
+           localStorage.getItem('jwt') ||
+           sessionStorage.getItem('token') ||
+           sessionStorage.getItem('authToken') ||
+           sessionStorage.getItem('jwt');
+  },
+  
+  setToken: (token) => {
+    localStorage.setItem('token', token);
+  },
+  
+  removeToken: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('jwt');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('jwt');
+  },
+  
+  isTokenExpired: (token) => {
+    if (!token) return true;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convert to milliseconds
+      return Date.now() > exp;
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true;
+    }
+  }
+};
 
 // API service to connect with your Spring Boot backend
 const api = {
   get: async (url) => {
+    const token = authUtils.getToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please log in.');
+    }
+    
+    if (authUtils.isTokenExpired(token)) {
+      authUtils.removeToken();
+      throw new Error('Authentication token has expired. Please log in again.');
+    }
+    
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
+    
+    if (response.status === 401) {
+      authUtils.removeToken();
+      throw new Error('Authentication failed. Please log in again.');
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -31,20 +80,32 @@ const api = {
   },
   
   post: async (url, data) => {
-    const token = getAuthToken();
+    const token = authUtils.getToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please log in.');
+    }
+    
+    if (authUtils.isTokenExpired(token)) {
+      authUtils.removeToken();
+      throw new Error('Authentication token has expired. Please log in again.');
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
     
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
     });
+    
+    if (response.status === 401) {
+      authUtils.removeToken();
+      throw new Error('Authentication failed. Please log in again.');
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -55,20 +116,32 @@ const api = {
   },
   
   put: async (url, data) => {
-    const token = getAuthToken();
+    const token = authUtils.getToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please log in.');
+    }
+    
+    if (authUtils.isTokenExpired(token)) {
+      authUtils.removeToken();
+      throw new Error('Authentication token has expired. Please log in again.');
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
     
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
     });
+    
+    if (response.status === 401) {
+      authUtils.removeToken();
+      throw new Error('Authentication failed. Please log in again.');
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -79,19 +152,31 @@ const api = {
   },
   
   delete: async (url) => {
-    const token = getAuthToken();
+    const token = authUtils.getToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please log in.');
+    }
+    
+    if (authUtils.isTokenExpired(token)) {
+      authUtils.removeToken();
+      throw new Error('Authentication token has expired. Please log in again.');
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
     
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'DELETE',
       headers,
     });
+    
+    if (response.status === 401) {
+      authUtils.removeToken();
+      throw new Error('Authentication failed. Please log in again.');
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,6 +184,36 @@ const api = {
 
     if (response.status === 204) return null;
     return await response.json();
+  },
+  
+  // Add login method for consistency
+  login: async (username, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Login failed! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.token || result.accessToken || result.jwt) {
+        const token = result.token || result.accessToken || result.jwt;
+        authUtils.setToken(token);
+        return { success: true, token };
+      } else {
+        throw new Error('No token received from login response');
+      }
+    } catch (error) {
+      console.error('Login Error:', error);
+      throw error;
+    }
   }
 };
 
@@ -106,9 +221,14 @@ const CustomerManagementPage = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [authError, setAuthError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Login state for quick testing
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
 
   // Currency formatting function
   const formatCurrency = (amount) => {
@@ -119,13 +239,37 @@ const CustomerManagementPage = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
+    const token = authUtils.getToken();
+    if (!token || authUtils.isTokenExpired(token)) {
+      setAuthError(true);
+      setLoading(false);
+    } else {
+      fetchCustomers();
+    }
   }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await api.login(loginCredentials.username, loginCredentials.password);
+      setAuthError(false);
+      setShowLogin(false);
+      await fetchCustomers();
+    } catch (error) {
+      setError(`Login failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       setError(null);
+      setAuthError(false);
       
       // Call your backend API endpoint
       const response = await api.get('/customers');
@@ -167,8 +311,12 @@ const CustomerManagementPage = () => {
       
     } catch (error) {
       console.error('Error fetching customers:', error);
-      setError(`Failed to load customers: ${error.message}`);
-      setCustomers([]);
+      if (error.message.includes('Authentication') || error.message.includes('log in')) {
+        setAuthError(true);
+      } else {
+        setError(`Failed to load customers: ${error.message}`);
+        setCustomers([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -196,7 +344,11 @@ const CustomerManagementPage = () => {
         fetchCustomers(); // Refresh the list
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert(`Failed to delete customer: ${error.message}`);
+        if (error.message.includes('Authentication')) {
+          setAuthError(true);
+        } else {
+          alert(`Failed to delete customer: ${error.message}`);
+        }
       }
     }
   };
@@ -232,7 +384,11 @@ const CustomerManagementPage = () => {
       fetchCustomers(); // Refresh the list
     } catch (error) {
       console.error('Error saving customer:', error);
-      alert(`Failed to save customer: ${error.message}`);
+      if (error.message.includes('Authentication')) {
+        setAuthError(true);
+      } else {
+        alert(`Failed to save customer: ${error.message}`);
+      }
     }
   };
 
@@ -249,6 +405,103 @@ const CustomerManagementPage = () => {
     }
     return 'credit-normal';
   };
+
+  // Authentication Error Screen
+  if (authError) {
+    return (
+      <div className="customer-loading-container">
+        <div className="customer-loading-card">
+          <div className="customer-error-text">
+            Authentication Required
+            <p style={{fontSize: '14px', marginTop: '10px', color: '#666'}}>
+              Please log in to access customer management
+            </p>
+          </div>
+          
+          {!showLogin && (
+            <button 
+              onClick={() => setShowLogin(true)}
+              className="customer-retry-button"
+            >
+              Login
+            </button>
+          )}
+          
+          {showLogin && (
+            <form onSubmit={handleLogin} style={{marginTop: '20px', maxWidth: '300px'}}>
+              <div style={{marginBottom: '15px'}}>
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={loginCredentials.username}
+                  onChange={(e) => setLoginCredentials({...loginCredentials, username: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  required
+                />
+              </div>
+              <div style={{marginBottom: '15px'}}>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={loginCredentials.password}
+                  onChange={(e) => setLoginCredentials({...loginCredentials, password: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  required
+                />
+              </div>
+              <div style={{display: 'flex', gap: '10px'}}>
+                <button 
+                  type="submit" 
+                  className="customer-retry-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Logging in...' : 'Login'}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowLogin(false)}
+                  style={{
+                    padding: '10px 20px',
+                    border: '1px solid #ddd',
+                    background: 'white',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+          
+          {error && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              background: '#fee2e2',
+              color: '#dc2626',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -354,7 +607,10 @@ const CustomerManagementPage = () => {
                       </td>
                       <td className="customer-table-cell">
                         <div className="customer-location">
-                          {customer.city && customer.country ? `${customer.city}, ${customer.country}` : 'N/A'}
+                          {(() => {
+                            const locationParts = [customer.city, customer.country].filter(Boolean);
+                            return locationParts.length > 0 ? locationParts.join(', ') : 'N/A';
+                          })()}
                         </div>
                         <div className="customer-address">
                           {customer.address || 'No address'}

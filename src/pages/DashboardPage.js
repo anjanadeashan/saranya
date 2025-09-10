@@ -4,16 +4,73 @@ import './Dashboard.css'; // Import the CSS file
 // API configuration to match your Spring Boot backend
 const API_BASE_URL = 'http://localhost:8080/api';
 
+// Authentication helper functions
+const authUtils = {
+  getToken: () => {
+    // Try multiple storage locations for the token
+    return localStorage.getItem('token') || 
+           localStorage.getItem('authToken') || 
+           localStorage.getItem('jwt') ||
+           sessionStorage.getItem('token') ||
+           sessionStorage.getItem('authToken') ||
+           sessionStorage.getItem('jwt');
+  },
+  
+  setToken: (token) => {
+    localStorage.setItem('token', token);
+  },
+  
+  removeToken: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('jwt');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('jwt');
+  },
+  
+  isTokenExpired: (token) => {
+    if (!token) return true;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convert to milliseconds
+      return Date.now() > exp;
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true;
+    }
+  }
+};
+
 const api = {
   get: async (url) => {
     try {
+      const token = authUtils.getToken();
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+      
+      if (authUtils.isTokenExpired(token)) {
+        authUtils.removeToken();
+        throw new Error('Authentication token has expired. Please log in again.');
+      }
+      
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}` // Add JWT token to Authorization header
         }
       });
+      
+      if (response.status === 401) {
+        // Token might be invalid or expired
+        authUtils.removeToken();
+        throw new Error('Authentication failed. Please log in again.');
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -31,6 +88,37 @@ const api = {
       }
     } catch (error) {
       console.error('API GET Error:', error);
+      throw error;
+    }
+  },
+  
+  // Add a login method for testing
+  login: async (username, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Login failed! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Assuming your login endpoint returns a token
+      if (result.token || result.accessToken || result.jwt) {
+        const token = result.token || result.accessToken || result.jwt;
+        authUtils.setToken(token);
+        return { success: true, token };
+      } else {
+        throw new Error('No token received from login response');
+      }
+    } catch (error) {
+      console.error('Login Error:', error);
       throw error;
     }
   }
@@ -60,24 +148,63 @@ const DashboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [authError, setAuthError] = useState(false);
+  
+  // Login state for quick testing
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
 
   useEffect(() => {
-    fetchDashboardData();
+    const token = authUtils.getToken();
+    if (!token || authUtils.isTokenExpired(token)) {
+      setAuthError(true);
+      setLoading(false);
+    } else {
+      fetchDashboardData();
+    }
   }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await api.login(loginCredentials.username, loginCredentials.password);
+      setAuthError(false);
+      setShowLogin(false);
+      await fetchDashboardData();
+    } catch (error) {
+      setError(`Login failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
+      setAuthError(false);
 
       // Fetch all data from your existing endpoints
       const [salesRes, customersRes, productsRes, suppliersRes, inventoryRes] = await Promise.all([
-        api.get('/sales').catch(err => ({ data: [] })),
+        api.get('/sales').catch(err => {
+          if (err.message.includes('Authentication')) {
+            setAuthError(true);
+          }
+          return { data: [] };
+        }),
         api.get('/customers').catch(err => ({ data: [] })),
         api.get('/products').catch(err => ({ data: [] })),
         api.get('/suppliers').catch(err => ({ data: [] })),
         api.get('/inventory').catch(err => ({ data: [] }))
       ]);
+
+      // If we got an auth error, stop processing
+      if (authError) {
+        return;
+      }
 
       const salesData = Array.isArray(salesRes.data) ? salesRes.data : [];
       const customersData = Array.isArray(customersRes.data) ? customersRes.data : [];
@@ -91,10 +218,40 @@ const DashboardPage = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data');
+      if (error.message.includes('Authentication') || error.message.includes('log in')) {
+        setAuthError(true);
+      } else {
+        setError('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    authUtils.removeToken();
+    setAuthError(true);
+    setDashboardData({
+      summary: {
+        totalProducts: 0,
+        totalSales: 0,
+        lowStockCount: 0,
+        pendingChecks: 0,
+        totalCustomers: 0,
+        totalSuppliers: 0,
+        totalRevenue: 0,
+        unpaidSales: 0
+      },
+      lowStockAlerts: [],
+      topProducts: [],
+      checkReminders: [],
+      recentSales: [],
+      salesAnalytics: {
+        monthlySales: [],
+        salesByPaymentMethod: [],
+        salesTrends: []
+      }
+    });
   };
 
   // Helper function to create lookup maps
@@ -381,6 +538,103 @@ const DashboardPage = () => {
     );
   };
 
+  // Authentication Error Screen
+  if (authError) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-error-container">
+          <div className="dashboard-error-text">
+            Authentication Required
+            <p style={{fontSize: '14px', marginTop: '10px', color: '#666'}}>
+              Please log in to access the dashboard
+            </p>
+          </div>
+          
+          {!showLogin && (
+            <button 
+              onClick={() => setShowLogin(true)}
+              className="dashboard-retry-button"
+            >
+              Login
+            </button>
+          )}
+          
+          {showLogin && (
+            <form onSubmit={handleLogin} style={{marginTop: '20px', maxWidth: '300px'}}>
+              <div style={{marginBottom: '15px'}}>
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={loginCredentials.username}
+                  onChange={(e) => setLoginCredentials({...loginCredentials, username: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  required
+                />
+              </div>
+              <div style={{marginBottom: '15px'}}>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={loginCredentials.password}
+                  onChange={(e) => setLoginCredentials({...loginCredentials, password: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  required
+                />
+              </div>
+              <div style={{display: 'flex', gap: '10px'}}>
+                <button 
+                  type="submit" 
+                  className="dashboard-retry-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Logging in...' : 'Login'}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowLogin(false)}
+                  style={{
+                    padding: '10px 20px',
+                    border: '1px solid #ddd',
+                    background: 'white',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+          
+          {error && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              background: '#fee2e2',
+              color: '#dc2626',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -412,6 +666,7 @@ const DashboardPage = () => {
     <div className="dashboard-container">
       <h1 className="dashboard-title">Business Dashboard</h1>
       
+      {/* Rest of your existing dashboard components... */}
       {/* Summary Cards */}
       <div className="dashboard-stats-grid">
         <div className="dashboard-stats-card">

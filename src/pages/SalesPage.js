@@ -36,7 +36,6 @@ const api = {
       
       const result = await response.json();
       
-      // Handle your ApiResponse wrapper
       if (result.success && result.data) {
         return { data: result.data };
       } else if (result.data) {
@@ -122,6 +121,709 @@ const api = {
   }
 };
 
+// Searchable Product Dropdown Component
+const SearchableProductDropdown = ({ 
+  products, 
+  value, 
+  onChange, 
+  disabled, 
+  className, 
+  placeholder = "Search by product code..." 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState(products);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = products.filter(product => 
+        product.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts(products);
+    }
+  }, [searchTerm, products]);
+
+  const selectedProduct = products.find(p => p.id === parseInt(value));
+
+  const handleSelect = (product) => {
+    onChange(product.id);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleInputClick = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    if (!isOpen) setIsOpen(true);
+  };
+
+  return (
+    <div className="searchable-dropdown" style={{ position: 'relative' }}>
+      <div 
+        className={`searchable-dropdown-input ${className || ''}`}
+        onClick={handleInputClick}
+        style={{
+          padding: '8px 12px',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          backgroundColor: disabled ? '#f5f5f5' : 'white',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <span style={{ color: selectedProduct ? '#333' : '#999' }}>
+          {selectedProduct ? `${selectedProduct.code}` : placeholder}
+        </span>
+        <span style={{ marginLeft: '8px' }}>▼</span>
+      </div>
+      
+      {isOpen && !disabled && (
+        <div 
+          className="searchable-dropdown-menu"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: 'white',
+            border: '1px solid #ddd',
+            borderTop: 'none',
+            borderRadius: '0 0 4px 4px',
+            maxHeight: '200px',
+            overflowY: 'auto',
+            zIndex: 1000,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            placeholder="Type to search product codes..."
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              border: 'none',
+              borderBottom: '1px solid #eee',
+              outline: 'none'
+            }}
+            autoFocus
+          />
+          
+          <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map(product => (
+                <div
+                  key={product.id}
+                  onClick={() => handleSelect(product)}
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #f5f5f5',
+                    ':hover': {
+                      backgroundColor: '#f8f9fa'
+                    }
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                >
+                  <div style={{ fontWeight: 'bold' }}>{product.code}</div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {formatCurrency(product.fixedPrice || product.price)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '8px 12px', color: '#999', textAlign: 'center' }}>
+                No products found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Sale Modal Component
+const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, downloadInvoice }) => {
+  const [formData, setFormData] = useState({
+    customerId: sale?.customer?.id || '',
+    paymentMethod: sale?.paymentMethod || 'CASH',
+    checkNumber: sale?.checkNumber || '',
+    bankName: sale?.bankName || '',
+    checkDate: sale?.checkDate || '',
+    notes: sale?.notes || '',
+    saleItems: sale?.saleItems?.map(item => ({
+      productId: item.product?.id || item.productId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount || 0
+    })) || [{ productId: '', quantity: 1, unitPrice: 0, discount: 0 }]
+  });
+
+  const [saving, setSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const paymentMethods = [
+    { value: 'CASH', label: 'Cash Payment' },
+    { value: 'CREDIT_CARD', label: 'Credit Card' },
+    { value: 'DEBIT_CARD', label: 'Debit Card' },
+    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+    { value: 'CREDIT_CHECK', label: 'Check Payment' }
+  ];
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.customerId) {
+      errors.customerId = 'Please select a customer';
+    }
+    
+    if (formData.paymentMethod === 'CREDIT_CHECK') {
+      if (!formData.checkNumber) {
+        errors.checkNumber = 'Check number is required for check payments';
+      }
+      if (!formData.checkDate) {
+        errors.checkDate = 'Check date is required for check payments';
+      }
+    }
+    
+    if (formData.saleItems.length === 0) {
+      errors.saleItems = 'At least one item is required';
+    } else {
+      formData.saleItems.forEach((item, index) => {
+        if (!item.productId) {
+          errors[`saleItems_${index}_productId`] = 'Product is required';
+        }
+        if (!item.quantity || item.quantity <= 0) {
+          errors[`saleItems_${index}_quantity`] = 'Valid quantity is required';
+        }
+        if (!item.unitPrice || item.unitPrice <= 0) {
+          errors[`saleItems_${index}_unitPrice`] = 'Valid price is required';
+        }
+      });
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setSaving(true);
+    
+    try {
+      const saleData = {
+        customerId: parseInt(formData.customerId),
+        paymentMethod: formData.paymentMethod,
+        checkNumber: formData.checkNumber || null,
+        bankName: formData.bankName || null,
+        checkDate: formData.checkDate || null,
+        notes: formData.notes || null,
+        saleItems: formData.saleItems.map(item => ({
+          productId: parseInt(item.productId),
+          quantity: parseInt(item.quantity),
+          unitPrice: parseFloat(item.unitPrice),
+          discount: parseFloat(item.discount || 0)
+        }))
+      };
+      
+      await onSave(saleData);
+    } catch (error) {
+      console.error('Error saving sale:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...formData.saleItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    setFormData(prev => ({ ...prev, saleItems: newItems }));
+    
+    const errorKey = `saleItems_${index}_${field}`;
+    if (validationErrors[errorKey]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [errorKey]: undefined
+      }));
+    }
+  };
+
+  const addItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      saleItems: [...prev.saleItems, { productId: '', quantity: 1, unitPrice: 0, discount: 0 }]
+    }));
+  };
+
+  const removeItem = (index) => {
+    if (formData.saleItems.length > 1) {
+      const newItems = formData.saleItems.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, saleItems: newItems }));
+    }
+  };
+
+  const calculateTotal = () => {
+    return formData.saleItems.reduce((total, item) => {
+      const lineTotal = (parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)) - parseFloat(item.discount || 0);
+      return total + lineTotal;
+    }, 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  // Helper function to get product code for display
+  const getProductCodeForDisplay = (item) => {
+    if (item.product && item.product.code) {
+      return item.product.code;
+    }
+    
+    if (item.productId && products && products.length > 0) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && product.code) {
+        return product.code;
+      }
+    }
+    
+    return 'Unknown Code';
+  };
+
+  return (
+    <div className="sales-modal-overlay" onClick={onClose}>
+      <div className="sales-modal" onClick={(e) => e.stopPropagation()}>
+        <div>
+          <h2 className="sales-modal-title">{sale ? `Sale #${sale.id} Details` : 'Create New Sale'}</h2>
+          
+          {sale ? (
+            // View Mode
+            <div>
+              {/* Invoice Action Buttons */}
+              <div className="sales-invoice-actions" style={{marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                <button 
+                  onClick={() => printInvoice(sale)}
+                  className="sales-invoice-button"
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Print Invoice
+                </button>
+                <button 
+                  onClick={() => downloadInvoice(sale)}
+                  className="sales-download-button"
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Download Invoice
+                </button>
+              </div>
+
+              <div className="sales-modal-view-grid">
+                <div>
+                  <div className="sales-modal-field">
+                    <label className="sales-modal-label">Customer</label>
+                    <p className="sales-modal-value">
+                      {sale.customer?.name || sale.customer?.customerName || sale.customerName || 'Walk-in Customer'}
+                    </p>
+                    {sale.customer?.email && (
+                      <p className="sales-modal-customer-email">Email: {sale.customer.email}</p>
+                    )}
+                    {sale.customer?.phone && (
+                      <p className="sales-modal-customer-phone">Phone: {sale.customer.phone}</p>
+                    )}
+                    <p className="sales-modal-customer-id">Customer ID: {sale.customer?.id || sale.customerId || 'No ID'}</p>
+                  </div>
+                  <div className="sales-modal-field">
+                    <label className="sales-modal-label">Sale Date</label>
+                    <p className="sales-modal-value">{formatDate(sale.saleDate)}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="sales-modal-field">
+                    <label className="sales-modal-label">Payment Method</label>
+                    <p className="sales-modal-value">{sale.paymentMethod?.replace('_', ' ') || 'Unknown'}</p>
+                  </div>
+                  <div className="sales-modal-field">
+                    <label className="sales-modal-label">Status</label>
+                    <span className={`sales-status-badge ${sale.isPaid ? 'sales-status-paid' : 'sales-status-unpaid'}`}>
+                      {sale.isPaid ? 'Paid' : 'Unpaid'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {sale.paymentMethod === 'CREDIT_CHECK' && (
+                <div className="sales-check-details">
+                  <h3 className="sales-check-title">Check Payment Details</h3>
+                  <div className="sales-check-details-grid">
+                    <div>
+                      <label className="sales-modal-label">Check Number</label>
+                      <p className="sales-modal-value">{sale.checkNumber || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="sales-modal-label">Check Date</label>
+                      <p className="sales-modal-value">{sale.checkDate ? formatDate(sale.checkDate) : 'N/A'}</p>
+                    </div>
+                  </div>
+                  {sale.bankName && (
+                    <div className="sales-modal-field">
+                      <label className="sales-modal-label">Bank Name</label>
+                      <p className="sales-modal-value">{sale.bankName}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="sales-modal-field">
+                <label className="sales-modal-label">Total Amount</label>
+                <p className="sales-total-amount">{formatCurrency(sale.totalAmount)}</p>
+              </div>
+              
+              {sale.notes && (
+                <div className="sales-modal-field">
+                  <label className="sales-modal-label">Notes</label>
+                  <p className="sales-notes-display">{sale.notes}</p>
+                </div>
+              )}
+              
+              {Array.isArray(sale.saleItems) && sale.saleItems.length > 0 && (
+                <div className="sales-modal-field">
+                  <label className="sales-modal-label">Sale Items</label>
+                  <div className="sales-items-table-wrapper">
+                    <table className="sales-items-table">
+                      <thead className="sales-items-header">
+                        <tr>
+                          <th className="sales-items-th">Product Code</th>
+                          <th className="sales-items-th">Quantity</th>
+                          <th className="sales-items-th">Unit Price</th>
+                          <th className="sales-items-th">Discount</th>
+                          <th className="sales-items-th">Line Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sale.saleItems.map((item, index) => (
+                          <tr key={item.id || index} className="sales-items-row">
+                            <td className="sales-items-td">{getProductCodeForDisplay(item)}</td>
+                            <td className="sales-items-td">{item.quantity || 0}</td>
+                            <td className="sales-items-td">{formatCurrency(item.unitPrice)}</td>
+                            <td className="sales-items-td">{formatCurrency(item.discount || 0)}</td>
+                            <td className="sales-items-td sales-line-total">{formatCurrency(item.lineTotal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              <div className="sales-modal-actions">
+                <button 
+                  onClick={onClose}
+                  className="sales-modal-close-button"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Create/Edit Mode
+            <form onSubmit={handleSubmit}>
+              {/* Customer Selection */}
+              <div className="sales-form-field">
+                <label className="sales-form-label">Customer *</label>
+                <select
+                  value={formData.customerId}
+                  onChange={(e) => handleInputChange('customerId', e.target.value)}
+                  className={`sales-form-select ${validationErrors.customerId ? 'sales-form-error' : ''}`}
+                  disabled={saving}
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name || customer.customerName} - {customer.email || `ID: ${customer.id}`}
+                    </option>
+                  ))}
+                </select>
+                {validationErrors.customerId && (
+                  <p className="sales-form-error-text">{validationErrors.customerId}</p>
+                )}
+              </div>
+
+              {/* Payment Method */}
+              <div className="sales-form-field">
+                <label className="sales-form-label">Payment Method *</label>
+                <div className="sales-payment-methods">
+                  {paymentMethods.map(method => (
+                    <div key={method.value}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.value}
+                        checked={formData.paymentMethod === method.value}
+                        onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                        className="sales-payment-radio"
+                        disabled={saving}
+                      />
+                      <div 
+                        className={`sales-payment-option ${formData.paymentMethod === method.value ? 'sales-payment-selected' : ''}`}
+                        onClick={() => handleInputChange('paymentMethod', method.value)}
+                      >
+                        <div className="sales-payment-label">{method.label}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Check Payment Details */}
+              {formData.paymentMethod === 'CREDIT_CHECK' && (
+                <div className="sales-check-payment-form">
+                  <h3 className="sales-check-form-title">Check Payment Details</h3>
+                  <div className="sales-check-form-grid">
+                    <div>
+                      <label className="sales-form-label">Check Number *</label>
+                      <input
+                        type="text"
+                        value={formData.checkNumber}
+                        onChange={(e) => handleInputChange('checkNumber', e.target.value)}
+                        className={`sales-form-input ${validationErrors.checkNumber ? 'sales-form-error' : ''}`}
+                        placeholder="Enter check number"
+                        disabled={saving}
+                      />
+                      {validationErrors.checkNumber && (
+                        <p className="sales-form-error-text">{validationErrors.checkNumber}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="sales-form-label">Check Date (Due Date) *</label>
+                      <input
+                        type="date"
+                        value={formData.checkDate}
+                        onChange={(e) => handleInputChange('checkDate', e.target.value)}
+                        className={`sales-form-input ${validationErrors.checkDate ? 'sales-form-error' : ''}`}
+                        disabled={saving}
+                      />
+                      {validationErrors.checkDate && (
+                        <p className="sales-form-error-text">{validationErrors.checkDate}</p>
+                      )}
+                      <p className="sales-check-date-note">Set future date for reminder alerts</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="sales-form-label">Bank Name</label>
+                    <input
+                      type="text"
+                      value={formData.bankName}
+                      onChange={(e) => handleInputChange('bankName', e.target.value)}
+                      className="sales-form-input"
+                      placeholder="Enter bank name (optional)"
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Sale Items */}
+              <div className="sales-form-field">
+                <div className="sales-items-header">
+                  <label className="sales-form-label">Sale Items *</label>
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    disabled={saving}
+                    className="sales-add-item-button"
+                  >
+                    Add Item
+                  </button>
+                </div>
+                
+                <div>
+                  {formData.saleItems.map((item, index) => (
+                    <div key={index} className="sales-item-form">
+                      <div className="sales-item-grid">
+                        <div>
+                          <label className="sales-form-label">Product *</label>
+                          <SearchableProductDropdown
+                            products={products}
+                            value={item.productId}
+                            onChange={(productId) => handleItemChange(index, 'productId', productId)}
+                            disabled={saving}
+                            className={validationErrors[`saleItems_${index}_productId`] ? 'sales-form-error' : ''}
+                            placeholder="Search by product code..."
+                          />
+                          {validationErrors[`saleItems_${index}_productId`] && (
+                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_productId`]}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="sales-form-label">Quantity *</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            className={`sales-form-input ${validationErrors[`saleItems_${index}_quantity`] ? 'sales-form-error' : ''}`}
+                            disabled={saving}
+                          />
+                          {validationErrors[`saleItems_${index}_quantity`] && (
+                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_quantity`]}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="sales-form-label">Unit Price *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.unitPrice}
+                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                            className={`sales-form-input ${validationErrors[`saleItems_${index}_unitPrice`] ? 'sales-form-error' : ''}`}
+                            disabled={saving}
+                            placeholder="Enter price manually"
+                          />
+                          {validationErrors[`saleItems_${index}_unitPrice`] && (
+                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_unitPrice`]}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="sales-form-label">Discount</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.discount}
+                            onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                            className="sales-form-input"
+                            disabled={saving}
+                          />
+                        </div>
+                        
+                        <div className="sales-item-total-section">
+                          <div className="sales-item-total">
+                            {formatCurrency((parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)) - parseFloat(item.discount || 0))}
+                          </div>
+                          
+                          {formData.saleItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              disabled={saving}
+                              className="sales-remove-item-button"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="sales-form-field">
+                <label className="sales-form-label">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  placeholder="Any additional notes..."
+                  rows="4"
+                  disabled={saving}
+                  className="sales-form-textarea"
+                />
+              </div>
+
+              {/* Total */}
+              <div className="sales-form-total">
+                <label className="sales-form-label">Total Amount</label>
+                <p className="sales-form-total-amount">{formatCurrency(calculateTotal())}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="sales-form-actions">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={saving}
+                  className="sales-form-cancel-button"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="sales-form-submit-button"
+                >
+                  {saving ? 'Saving...' : (sale ? 'Update Sale' : 'Create Sale')}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main SalesPage Component
 const SalesPage = () => {
   const [sales, setSales] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -135,7 +837,7 @@ const SalesPage = () => {
   const [selectedSale, setSelectedSale] = useState(null);
   const [checkReminders, setCheckReminders] = useState([]);
 
-  // Invoice/Receipt generator function
+  // Invoice/Receipt generator function with proper product code lookup
   const generateInvoiceHTML = useCallback((sale) => {
     const formatDateInvoice = (dateString) => {
       if (!dateString) return 'N/A';
@@ -157,6 +859,25 @@ const SalesPage = () => {
     const calculateLineTotal = (item) => {
       const subtotal = (item.quantity || 0) * (item.unitPrice || 0);
       return subtotal - (item.discount || 0);
+    };
+
+    // Helper function to get product code for invoice items
+    const getProductCode = (item) => {
+      // First try to get from item.product.code
+      if (item.product && item.product.code) {
+        return item.product.code;
+      }
+      
+      // If not available, try to find product by ID from products array
+      if (item.productId && products && products.length > 0) {
+        const product = products.find(p => p.id === item.productId);
+        if (product && product.code) {
+          return product.code;
+        }
+      }
+      
+      // Fallback to 'Unknown Code'
+      return 'Unknown Code';
     };
 
     return `
@@ -239,7 +960,7 @@ const SalesPage = () => {
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 40%;">Item</th>
+                <th style="width: 40%;">Item Code</th>
                 <th style="width: 15%;" class="text-right">Qty</th>
                 <th style="width: 15%;" class="text-right">Unit Price</th>
                 <th style="width: 15%;" class="text-right">Discount</th>
@@ -250,8 +971,7 @@ const SalesPage = () => {
               ${sale.saleItems?.map(item => `
                 <tr>
                   <td>
-                    <div style="font-weight: bold;">${item.product?.name || 'Unknown Product'}</div>
-                    ${item.product?.code ? `<div style="font-size: 12px; color: #666;">Code: ${item.product.code}</div>` : ''}
+                    <div style="font-weight: bold;">${getProductCode(item)}</div>
                   </td>
                   <td class="text-right">${item.quantity || 0}</td>
                   <td class="text-right">${formatCurrencyInvoice(item.unitPrice)}</td>
@@ -304,7 +1024,7 @@ const SalesPage = () => {
       </body>
       </html>
     `;
-  }, []);
+  }, [products]); // Added products as dependency
 
   // Function to download invoice
   const downloadInvoice = useCallback((sale) => {
@@ -732,570 +1452,6 @@ const SalesPage = () => {
             downloadInvoice={downloadInvoice}
           />
         )}
-      </div>
-    </div>
-  );
-};
-
-// Sale Modal Component
-//add
-const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, downloadInvoice }) => {
-  const [formData, setFormData] = useState({
-    customerId: sale?.customer?.id || '',
-    paymentMethod: sale?.paymentMethod || 'CASH',
-    checkNumber: sale?.checkNumber || '',
-    bankName: sale?.bankName || '',
-    checkDate: sale?.checkDate || '',
-    notes: sale?.notes || '',
-    saleItems: sale?.saleItems?.map(item => ({
-      productId: item.product?.id || item.productId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      discount: item.discount || 0
-    })) || [{ productId: '', quantity: 1, unitPrice: 0, discount: 0 }]
-  });
-
-  const [saving, setSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
-
-  const paymentMethods = [
-    { value: 'CASH', label: 'Cash Payment' },
-    { value: 'CREDIT_CARD', label: 'Credit Card' },
-    { value: 'DEBIT_CARD', label: 'Debit Card' },
-    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-    { value: 'CREDIT_CHECK', label: 'Check Payment' }
-  ];
-
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.customerId) {
-      errors.customerId = 'Please select a customer';
-    }
-    
-    if (formData.paymentMethod === 'CREDIT_CHECK') {
-      if (!formData.checkNumber) {
-        errors.checkNumber = 'Check number is required for check payments';
-      }
-      if (!formData.checkDate) {
-        errors.checkDate = 'Check date is required for check payments';
-      }
-    }
-    
-    if (formData.saleItems.length === 0) {
-      errors.saleItems = 'At least one item is required';
-    } else {
-      formData.saleItems.forEach((item, index) => {
-        if (!item.productId) {
-          errors[`saleItems_${index}_productId`] = 'Product is required';
-        }
-        if (!item.quantity || item.quantity <= 0) {
-          errors[`saleItems_${index}_quantity`] = 'Valid quantity is required';
-        }
-        if (!item.unitPrice || item.unitPrice <= 0) {
-          errors[`saleItems_${index}_unitPrice`] = 'Valid price is required';
-        }
-      });
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setSaving(true);
-    
-    try {
-      const saleData = {
-        customerId: parseInt(formData.customerId),
-        paymentMethod: formData.paymentMethod,
-        checkNumber: formData.checkNumber || null,
-        bankName: formData.bankName || null,
-        checkDate: formData.checkDate || null,
-        notes: formData.notes || null,
-        saleItems: formData.saleItems.map(item => ({
-          productId: parseInt(item.productId),
-          quantity: parseInt(item.quantity),
-          unitPrice: parseFloat(item.unitPrice),
-          discount: parseFloat(item.discount || 0)
-        }))
-      };
-      
-      await onSave(saleData);
-    } catch (error) {
-      console.error('Error saving sale:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }));
-    }
-  };
-
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...formData.saleItems];
-    newItems[index] = { ...newItems[index], [field]: value };
-    
-    if (field === 'productId') {
-      const product = products.find(p => p.id === parseInt(value));
-      if (product) {
-        newItems[index].unitPrice = product.fixedPrice || product.price || 0;
-      }
-    }
-    
-    setFormData(prev => ({ ...prev, saleItems: newItems }));
-    
-    const errorKey = `saleItems_${index}_${field}`;
-    if (validationErrors[errorKey]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [errorKey]: undefined
-      }));
-    }
-  };
-
-  const addItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      saleItems: [...prev.saleItems, { productId: '', quantity: 1, unitPrice: 0, discount: 0 }]
-    }));
-  };
-
-  const removeItem = (index) => {
-    if (formData.saleItems.length > 1) {
-      const newItems = formData.saleItems.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, saleItems: newItems }));
-    }
-  };
-
-  const calculateTotal = () => {
-    return formData.saleItems.reduce((total, item) => {
-      const lineTotal = (parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)) - parseFloat(item.discount || 0);
-      return total + lineTotal;
-    }, 0);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
-
-  return (
-    <div className="sales-modal-overlay" onClick={onClose}>
-      <div className="sales-modal" onClick={(e) => e.stopPropagation()}>
-        <div>
-          <h2 className="sales-modal-title">{sale ? `Sale #${sale.id} Details` : 'Create New Sale'}</h2>
-          
-          {sale ? (
-            // View Mode
-            <div>
-              {/* Invoice Action Buttons */}
-              <div className="sales-invoice-actions" style={{marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
-                <button 
-                  onClick={() => printInvoice(sale)}
-                  className="sales-invoice-button"
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  🖨️ Print Invoice
-                </button>
-                <button 
-                  onClick={() => downloadInvoice(sale)}
-                  className="sales-download-button"
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  💾 Download Invoice
-                </button>
-              </div>
-
-              <div className="sales-modal-view-grid">
-                <div>
-                  <div className="sales-modal-field">
-                    <label className="sales-modal-label">Customer</label>
-                    <p className="sales-modal-value">
-                      {sale.customer?.name || sale.customer?.customerName || sale.customerName || 'Walk-in Customer'}
-                    </p>
-                    {sale.customer?.email && (
-                      <p className="sales-modal-customer-email">Email: {sale.customer.email}</p>
-                    )}
-                    {sale.customer?.phone && (
-                      <p className="sales-modal-customer-phone">Phone: {sale.customer.phone}</p>
-                    )}
-                    <p className="sales-modal-customer-id">Customer ID: {sale.customer?.id || sale.customerId || 'No ID'}</p>
-                  </div>
-                  <div className="sales-modal-field">
-                    <label className="sales-modal-label">Sale Date</label>
-                    <p className="sales-modal-value">{formatDate(sale.saleDate)}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="sales-modal-field">
-                    <label className="sales-modal-label">Payment Method</label>
-                    <p className="sales-modal-value">{sale.paymentMethod?.replace('_', ' ') || 'Unknown'}</p>
-                  </div>
-                  <div className="sales-modal-field">
-                    <label className="sales-modal-label">Status</label>
-                    <span className={`sales-status-badge ${sale.isPaid ? 'sales-status-paid' : 'sales-status-unpaid'}`}>
-                      {sale.isPaid ? 'Paid' : 'Unpaid'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              {sale.paymentMethod === 'CREDIT_CHECK' && (
-                <div className="sales-check-details">
-                  <h3 className="sales-check-title">Check Payment Details</h3>
-                  <div className="sales-check-details-grid">
-                    <div>
-                      <label className="sales-modal-label">Check Number</label>
-                      <p className="sales-modal-value">{sale.checkNumber || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="sales-modal-label">Check Date</label>
-                      <p className="sales-modal-value">{sale.checkDate ? formatDate(sale.checkDate) : 'N/A'}</p>
-                    </div>
-                  </div>
-                  {sale.bankName && (
-                    <div className="sales-modal-field">
-                      <label className="sales-modal-label">Bank Name</label>
-                      <p className="sales-modal-value">{sale.bankName}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="sales-modal-field">
-                <label className="sales-modal-label">Total Amount</label>
-                <p className="sales-total-amount">{formatCurrency(sale.totalAmount)}</p>
-              </div>
-              
-              {sale.notes && (
-                <div className="sales-modal-field">
-                  <label className="sales-modal-label">Notes</label>
-                  <p className="sales-notes-display">{sale.notes}</p>
-                </div>
-              )}
-              
-              {Array.isArray(sale.saleItems) && sale.saleItems.length > 0 && (
-                <div className="sales-modal-field">
-                  <label className="sales-modal-label">Sale Items</label>
-                  <div className="sales-items-table-wrapper">
-                    <table className="sales-items-table">
-                      <thead className="sales-items-header">
-                        <tr>
-                          <th className="sales-items-th">Product</th>
-                          <th className="sales-items-th">Quantity</th>
-                          <th className="sales-items-th">Unit Price</th>
-                          <th className="sales-items-th">Discount</th>
-                          <th className="sales-items-th">Line Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sale.saleItems.map((item, index) => (
-                          <tr key={item.id || index} className="sales-items-row">
-                            <td className="sales-items-td">{item.product?.name || 'Unknown Product'}</td>
-                            <td className="sales-items-td">{item.quantity || 0}</td>
-                            <td className="sales-items-td">{formatCurrency(item.unitPrice)}</td>
-                            <td className="sales-items-td">{formatCurrency(item.discount || 0)}</td>
-                            <td className="sales-items-td sales-line-total">{formatCurrency(item.lineTotal)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-              
-              <div className="sales-modal-actions">
-                <button 
-                  onClick={onClose}
-                  className="sales-modal-close-button"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Create/Edit Mode
-            <form onSubmit={handleSubmit}>
-              {/* Customer Selection */}
-              <div className="sales-form-field">
-                <label className="sales-form-label">Customer *</label>
-                <select
-                  value={formData.customerId}
-                  onChange={(e) => handleInputChange('customerId', e.target.value)}
-                  className={`sales-form-select ${validationErrors.customerId ? 'sales-form-error' : ''}`}
-                  disabled={saving}
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name || customer.customerName} - {customer.email || `ID: ${customer.id}`}
-                    </option>
-                  ))}
-                </select>
-                {validationErrors.customerId && (
-                  <p className="sales-form-error-text">{validationErrors.customerId}</p>
-                )}
-              </div>
-
-              {/* Payment Method */}
-              <div className="sales-form-field">
-                <label className="sales-form-label">Payment Method *</label>
-                <div className="sales-payment-methods">
-                  {paymentMethods.map(method => (
-                    <div key={method.value}>
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.value}
-                        checked={formData.paymentMethod === method.value}
-                        onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                        className="sales-payment-radio"
-                        disabled={saving}
-                      />
-                      <div 
-                        className={`sales-payment-option ${formData.paymentMethod === method.value ? 'sales-payment-selected' : ''}`}
-                        onClick={() => handleInputChange('paymentMethod', method.value)}
-                      >
-                        <div className="sales-payment-label">{method.label}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Check Payment Details */}
-              {formData.paymentMethod === 'CREDIT_CHECK' && (
-                <div className="sales-check-payment-form">
-                  <h3 className="sales-check-form-title">Check Payment Details</h3>
-                  <div className="sales-check-form-grid">
-                    <div>
-                      <label className="sales-form-label">Check Number *</label>
-                      <input
-                        type="text"
-                        value={formData.checkNumber}
-                        onChange={(e) => handleInputChange('checkNumber', e.target.value)}
-                        className={`sales-form-input ${validationErrors.checkNumber ? 'sales-form-error' : ''}`}
-                        placeholder="Enter check number"
-                        disabled={saving}
-                      />
-                      {validationErrors.checkNumber && (
-                        <p className="sales-form-error-text">{validationErrors.checkNumber}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="sales-form-label">Check Date (Due Date) *</label>
-                      <input
-                        type="date"
-                        value={formData.checkDate}
-                        onChange={(e) => handleInputChange('checkDate', e.target.value)}
-                        className={`sales-form-input ${validationErrors.checkDate ? 'sales-form-error' : ''}`}
-                        disabled={saving}
-                      />
-                      {validationErrors.checkDate && (
-                        <p className="sales-form-error-text">{validationErrors.checkDate}</p>
-                      )}
-                      <p className="sales-check-date-note">Set future date for reminder alerts</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="sales-form-label">Bank Name</label>
-                    <input
-                      type="text"
-                      value={formData.bankName}
-                      onChange={(e) => handleInputChange('bankName', e.target.value)}
-                      className="sales-form-input"
-                      placeholder="Enter bank name (optional)"
-                      disabled={saving}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Sale Items */}
-              <div className="sales-form-field">
-                <div className="sales-items-header">
-                  <label className="sales-form-label">Sale Items *</label>
-                  <button
-                    type="button"
-                    onClick={addItem}
-                    disabled={saving}
-                    className="sales-add-item-button"
-                  >
-                    Add Item
-                  </button>
-                </div>
-                
-                <div>
-                  {formData.saleItems.map((item, index) => (
-                    <div key={index} className="sales-item-form">
-                      <div className="sales-item-grid">
-                        <div>
-                          <label className="sales-form-label">Product *</label>
-                          <select
-                            value={item.productId}
-                            onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                            className={`sales-form-select ${validationErrors[`saleItems_${index}_productId`] ? 'sales-form-error' : ''}`}
-                            disabled={saving}
-                          >
-                            <option value="">Select a product</option>
-                            {products.map(product => (
-                              <option key={product.id} value={product.id}>
-                                {product.name} - {formatCurrency(product.fixedPrice || product.price)}
-                              </option>
-                            ))}
-                          </select>
-                          {validationErrors[`saleItems_${index}_productId`] && (
-                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_productId`]}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <label className="sales-form-label">Quantity *</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                            className={`sales-form-input ${validationErrors[`saleItems_${index}_quantity`] ? 'sales-form-error' : ''}`}
-                            disabled={saving}
-                          />
-                          {validationErrors[`saleItems_${index}_quantity`] && (
-                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_quantity`]}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <label className="sales-form-label">Unit Price *</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={item.unitPrice}
-                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                            className={`sales-form-input ${validationErrors[`saleItems_${index}_unitPrice`] ? 'sales-form-error' : ''}`}
-                            disabled={saving}
-                          />
-                          {validationErrors[`saleItems_${index}_unitPrice`] && (
-                            <p className="sales-form-error-text-small">{validationErrors[`saleItems_${index}_unitPrice`]}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <label className="sales-form-label">Discount</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={item.discount}
-                            onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                            className="sales-form-input"
-                            disabled={saving}
-                          />
-                        </div>
-                        
-                        <div className="sales-item-total-section">
-                          <div className="sales-item-total">
-                            {formatCurrency((parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)) - parseFloat(item.discount || 0))}
-                          </div>
-                          
-                          {formData.saleItems.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                              disabled={saving}
-                              className="sales-remove-item-button"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="sales-form-field">
-                <label className="sales-form-label">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Any additional notes..."
-                  rows="4"
-                  disabled={saving}
-                  className="sales-form-textarea"
-                />
-              </div>
-
-              {/* Total */}
-              <div className="sales-form-total">
-                <label className="sales-form-label">Total Amount</label>
-                <p className="sales-form-total-amount">{formatCurrency(calculateTotal())}</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="sales-form-actions">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={saving}
-                  className="sales-form-cancel-button"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="sales-form-submit-button"
-                >
-                  {saving ? 'Saving...' : (sale ? 'Update Sale' : 'Create Sale')}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
       </div>
     </div>
   );
