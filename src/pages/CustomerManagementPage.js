@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './CustomerManagement.css'// Import the CSS file
+import './CustomerManagement.css'
+
 
 // API configuration - update these values for your backend
 const API_BASE_URL = 'http://localhost:8080/api'; // Update this to your backend URL

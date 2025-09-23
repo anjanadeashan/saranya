@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FaUser, FaLock, FaBuilding } from 'react-icons/fa';
 import axios from 'axios';
 import './LoginPage.css'; // Import custom CSS
+import Logo from '../asset/Artboard 1@4x.png'; // Import logo image
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -57,7 +58,14 @@ const LoginPage = () => {
               <Card.Body className="login-card-body">
                 <div className="login-header">
                   <div className="company-logo">
-                    <FaBuilding className="logo-icon" />
+                   
+                    <img 
+      src={Logo} 
+      alt="Logo"
+      className="medium-image"
+      onError={() => console.log('Image failed to load')}
+    />
+    
                   </div>
                   <h1 className="company-name">Saranya International</h1>
                   <h2 className="system-name">Inventory Management System</h2>

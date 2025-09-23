@@ -1,454 +1,522 @@
-import React, { useState } from 'react';
-import { FaBars, FaUser, FaSignOutAlt, FaBell, FaCog, FaSearch } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaBars, FaUser, FaSignOutAlt, FaChevronDown, FaCog, FaShieldAlt, FaChartLine, FaDatabase } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Header = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Handle responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
+    setShowDropdown(false);
   };
 
-  // Header styles
+  // Enhanced admin features
+  const adminFeatures = [
+    { icon: FaUser, title: 'User Management', desc: 'Manage system users' },
+    { icon: FaDatabase, title: 'Database Settings', desc: 'Configure database' },
+    { icon: FaChartLine, title: 'System Analytics', desc: 'View system stats' },
+    { icon: FaShieldAlt, title: 'Security Center', desc: 'Security settings' }
+  ];
+
+  // Header styles with orange theme
   const headerStyles = {
-    // Main header container
     header: {
-      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 100%)',
+      background: isScrolled 
+        ? 'linear-gradient(135deg, rgba(255, 140, 0, 0.98) 0%, rgba(255, 165, 0, 0.98) 50%, rgba(255, 69, 0, 0.98) 100%)'
+        : 'linear-gradient(135deg, rgba(255, 140, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 50%, rgba(255, 69, 0, 0.95) 100%)',
       backdropFilter: 'blur(20px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-      padding: '16px 24px',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: isScrolled 
+        ? '0 8px 32px rgba(255, 140, 0, 0.3)'
+        : '0 4px 20px rgba(255, 140, 0, 0.2)',
+      padding: isMobile ? '12px 16px' : '16px 32px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      position: 'relative',
-      zIndex: 999,
-      height: '80px',
+      position: 'sticky',
+      top: 0,
+      zIndex: 1000,
+      height: isMobile ? '70px' : '85px',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     },
 
-    // Left section
     leftSection: {
       display: 'flex',
       alignItems: 'center',
-      gap: '20px',
+      gap: isMobile ? '12px' : '24px',
+      flex: 1,
     },
 
-    // Sidebar toggle button
     toggleButton: {
-      background: 'rgba(255, 255, 255, 0.15)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '12px',
-      padding: '12px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '15px',
+      padding: isMobile ? '10px' : '14px',
       color: 'white',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '16px',
+      fontSize: isMobile ? '14px' : '18px',
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
     },
 
-    // Brand section
+    toggleButtonHover: {
+      background: 'rgba(255, 255, 255, 0.35)',
+      transform: 'translateY(-2px) scale(1.05)',
+      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+
     brand: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
+      gap: isMobile ? '8px' : '16px',
       color: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
     },
 
     brandIcon: {
-      width: '40px',
-      height: '40px',
-      background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
-      borderRadius: '10px',
+      width: isMobile ? '35px' : '48px',
+      height: isMobile ? '35px' : '48px',
+      background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.9) 100%)',
+      borderRadius: '12px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontWeight: '800',
-      fontSize: '16px',
-      color: 'white',
-      boxShadow: '0 4px 15px rgba(251, 191, 36, 0.3)',
+      fontWeight: '900',
+      fontSize: isMobile ? '12px' : '16px',
+      color: '#ff8c00',
+      boxShadow: '0 6px 20px rgba(255, 255, 255, 0.3)',
+      transition: 'all 0.3s ease',
     },
 
     brandText: {
-      fontSize: '20px',
-      fontWeight: '700',
-      background: 'linear-gradient(135deg, #ffffff, #e2e8f0)',
+      fontSize: isMobile ? '16px' : '24px',
+      fontWeight: '800',
+      background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%)',
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text',
+      textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      display: isMobile ? 'none' : 'block',
     },
 
-    // Right section
+    brandSubtext: {
+      fontSize: '12px',
+      color: 'rgba(255, 255, 255, 0.8)',
+      fontWeight: '500',
+      display: isMobile ? 'none' : 'block',
+    },
+
     rightSection: {
       display: 'flex',
       alignItems: 'center',
-      gap: '16px',
+      gap: isMobile ? '8px' : '16px',
     },
 
-    // Search bar
-    searchContainer: {
+    // Enhanced Admin Section
+    adminSection: {
       position: 'relative',
       display: 'flex',
       alignItems: 'center',
-    },
-
-    searchInput: {
-      background: 'rgba(255, 255, 255, 0.15)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '24px',
-      padding: '10px 16px 10px 40px',
-      color: 'white',
-      fontSize: '14px',
-      width: '280px',
-      outline: 'none',
-      transition: 'all 0.3s ease',
-    },
-
-    searchIcon: {
-      position: 'absolute',
-      left: '14px',
-      color: 'rgba(255, 255, 255, 0.7)',
-      fontSize: '14px',
-      pointerEvents: 'none',
-    },
-
-    // Navigation items
-    navItem: {
-      position: 'relative',
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '10px',
-      padding: '10px',
+      gap: isMobile ? '8px' : '12px',
+      background: showDropdown || hoveredItem === 'admin'
+        ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)'
+        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)',
+      borderRadius: '20px',
+      padding: isMobile ? '8px 12px' : '12px 20px',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    navIcon: {
-      color: 'white',
-      fontSize: '16px',
-      transition: 'all 0.3s ease',
-    },
-
-    // Notification badge
-    notificationBadge: {
-      position: 'absolute',
-      top: '-6px',
-      right: '-6px',
-      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-      borderRadius: '50%',
-      width: '20px',
-      height: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '11px',
-      fontWeight: '600',
-      color: 'white',
-      boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
-    },
-
-    // User section
-    userSection: {
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      background: 'rgba(255, 255, 255, 0.15)',
-      borderRadius: '16px',
-      padding: '8px 16px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       border: '1px solid rgba(255, 255, 255, 0.2)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+      transform: hoveredItem === 'admin' ? 'translateY(-2px)' : 'translateY(0)',
     },
 
-    userAvatar: {
-      width: '36px',
-      height: '36px',
-      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    adminAvatar: {
+      width: isMobile ? '32px' : '42px',
+      height: isMobile ? '32px' : '42px',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: 'white',
-      fontSize: '14px',
-      boxShadow: '0 3px 12px rgba(59, 130, 246, 0.3)',
+      color: '#ff8c00',
+      fontSize: isMobile ? '12px' : '16px',
+      fontWeight: 'bold',
+      boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)',
+      transition: 'all 0.3s ease',
+      border: '2px solid rgba(255, 255, 255, 0.5)',
     },
 
-    userInfo: {
+    adminInfo: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
     },
 
-    userName: {
+    adminName: {
       color: 'white',
-      fontSize: '14px',
-      fontWeight: '600',
+      fontSize: isMobile ? '12px' : '15px',
+      fontWeight: '700',
       lineHeight: '1.2',
+      textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
     },
 
-    userRole: {
-      color: 'rgba(255, 255, 255, 0.7)',
+    adminRole: {
+      color: 'rgba(255, 255, 255, 0.8)',
+      fontSize: isMobile ? '10px' : '12px',
+      lineHeight: '1.2',
+      fontWeight: '500',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    },
+
+    chevronIcon: {
+      color: 'rgba(255, 255, 255, 0.9)',
       fontSize: '12px',
-      lineHeight: '1.2',
+      transition: 'all 0.3s ease',
+      transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
     },
 
-    // Dropdown menu
+    // Enhanced Dropdown
     dropdown: {
       position: 'absolute',
       top: '100%',
       right: '0',
-      marginTop: '8px',
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(20px)',
-      borderRadius: '16px',
-      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      padding: '8px 0',
-      minWidth: '280px',
-      zIndex: 1000,
+      marginTop: '12px',
+      background: 'rgba(255, 255, 255, 0.98)',
+      backdropFilter: 'blur(25px)',
+      borderRadius: '20px',
+      boxShadow: '0 25px 70px rgba(255, 140, 0, 0.25)',
+      border: '1px solid rgba(255, 140, 0, 0.2)',
+      padding: '0',
+      minWidth: isMobile ? '280px' : '350px',
+      zIndex: 1001,
+      overflow: 'hidden',
+      animation: 'dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     },
 
     dropdownHeader: {
-      padding: '16px 20px',
-      background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
-      margin: '0 8px 8px 8px',
-      borderRadius: '12px',
+      padding: '24px',
+      background: 'linear-gradient(135deg, #ff8c00 0%, #ffa500 50%, #ff4500 100%)',
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
+      gap: '16px',
+      color: 'white',
     },
 
-    dropdownItem: {
+    dropdownHeaderAvatar: {
+      width: '60px',
+      height: '60px',
+      background: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '22px',
+      color: '#ff8c00',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+    },
+
+    adminFeaturesGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '12px',
+      padding: '20px',
+      background: 'rgba(255, 140, 0, 0.05)',
+    },
+
+    featureCard: {
+      background: 'rgba(255, 255, 255, 0.8)',
+      borderRadius: '12px',
+      padding: '16px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      border: '1px solid rgba(255, 140, 0, 0.1)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '8px',
+      textAlign: 'center',
+    },
+
+    featureCardHover: {
+      background: 'linear-gradient(135deg, #ff8c00 0%, #ffa500 100%)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 8px 25px rgba(255, 140, 0, 0.3)',
+      color: 'white',
+    },
+
+    featureIcon: {
+      fontSize: '20px',
+      color: '#ff8c00',
+      transition: 'all 0.3s ease',
+    },
+
+    featureIconHover: {
+      color: 'white',
+      transform: 'scale(1.1)',
+    },
+
+    featureTitle: {
+      fontSize: '12px',
+      fontWeight: '600',
+      color: '#333',
+      transition: 'all 0.3s ease',
+    },
+
+    featureTitleHover: {
+      color: 'white',
+    },
+
+    featureDesc: {
+      fontSize: '10px',
+      color: '#666',
+      transition: 'all 0.3s ease',
+    },
+
+    featureDescHover: {
+      color: 'rgba(255, 255, 255, 0.9)',
+    },
+
+    dropdownDivider: {
+      height: '1px',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.3), transparent)',
+      margin: '0 20px',
+    },
+
+    logoutButton: {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      padding: '12px 20px',
-      color: '#374151',
+      padding: '16px 24px',
+      color: '#dc2626',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       fontSize: '14px',
-      fontWeight: '500',
+      fontWeight: '600',
+      margin: '8px 0',
     },
 
-    dropdownIcon: {
-      fontSize: '16px',
-      width: '20px',
-      textAlign: 'center',
+    logoutButtonHover: {
+      background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+      color: 'white',
+    },
+
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 999,
+      background: 'rgba(0, 0, 0, 0.1)',
+      backdropFilter: 'blur(2px)',
     },
   };
 
-  // Hover states
-  const [hoveredItem, setHoveredItem] = useState(null);
-
-  const getNavItemStyle = (itemName) => ({
-    ...headerStyles.navItem,
-    background: hoveredItem === itemName 
-      ? 'rgba(255, 255, 255, 0.2)' 
-      : 'rgba(255, 255, 255, 0.1)',
-    transform: hoveredItem === itemName ? 'translateY(-2px)' : 'translateY(0)',
-  });
-
-  const getDropdownItemStyle = (itemName) => ({
-    ...headerStyles.dropdownItem,
-    background: hoveredItem === itemName 
-      ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' 
-      : 'transparent',
-    color: hoveredItem === itemName ? 'white' : '#374151',
-    transform: hoveredItem === itemName ? 'translateX(4px)' : 'translateX(0)',
-  });
+  // Inline keyframes for animation
+  const dropdownAnimation = `
+    @keyframes dropdownSlide {
+      from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  `;
 
   return (
-    <header style={headerStyles.header}>
-      {/* Left Section */}
-      <div style={headerStyles.leftSection}>
-        {/* Sidebar Toggle */}
-        <button
-          style={{
-            ...headerStyles.toggleButton,
-            background: hoveredItem === 'toggle' 
-              ? 'rgba(255, 255, 255, 0.25)' 
-              : 'rgba(255, 255, 255, 0.15)',
-          }}
-          onClick={toggleSidebar}
-          onMouseEnter={() => setHoveredItem('toggle')}
-          onMouseLeave={() => setHoveredItem(null)}
-          aria-label="Toggle Sidebar"
-        >
-          <FaBars />
-        </button>
+    <>
+      <style>{dropdownAnimation}</style>
+      <header style={headerStyles.header}>
+        {/* Left Section */}
+        <div style={headerStyles.leftSection}>
+          {/* Sidebar Toggle */}
+          <button
+            style={hoveredItem === 'toggle' ? {...headerStyles.toggleButton, ...headerStyles.toggleButtonHover} : headerStyles.toggleButton}
+            onClick={toggleSidebar}
+            onMouseEnter={() => setHoveredItem('toggle')}
+            onMouseLeave={() => setHoveredItem(null)}
+            aria-label="Toggle Sidebar"
+          >
+            <FaBars />
+          </button>
 
-        {/* Brand */}
-        <div style={headerStyles.brand}>
-          <div style={headerStyles.brandIcon}>
-            IMS
+          {/* Enhanced Brand */}
+          <div 
+            style={headerStyles.brand}
+            onMouseEnter={() => setHoveredItem('brand')}
+            onMouseLeave={() => setHoveredItem(null)}
+          >
+            <div style={{
+              ...headerStyles.brandIcon,
+              transform: hoveredItem === 'brand' ? 'rotate(5deg) scale(1.05)' : 'rotate(0deg) scale(1)',
+            }}>
+              IMS
+            </div>
+            <div>
+              <div style={headerStyles.brandText}>
+                Inventory Management System
+              </div>
+              <div style={headerStyles.brandSubtext}>
+                Advanced Control Panel
+              </div>
+            </div>
           </div>
-          <span style={headerStyles.brandText}>
-            Inventory Management System
-          </span>
         </div>
-      </div>
 
-      {/* Right Section */}
-      <div style={headerStyles.rightSection}>
-        {/* Search Bar */}
-        <div style={headerStyles.searchContainer}>
-          <FaSearch style={headerStyles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search products, customers..."
-            style={{
-              ...headerStyles.searchInput,
-              background: hoveredItem === 'search' 
-                ? 'rgba(255, 255, 255, 0.2)' 
-                : 'rgba(255, 255, 255, 0.15)',
-            }}
-            onFocus={() => setHoveredItem('search')}
-            onBlur={() => setHoveredItem(null)}
+        {/* Right Section - Enhanced Admin Panel */}
+        <div style={headerStyles.rightSection}>
+          <div
+            style={headerStyles.adminSection}
+            onMouseEnter={() => setHoveredItem('admin')}
+            onMouseLeave={() => setHoveredItem(null)}
+            onClick={() => setShowDropdown(!showDropdown)}
+          >
+            <div style={headerStyles.adminAvatar}>
+              <FaShieldAlt />
+            </div>
+            {!isMobile && (
+              <div style={headerStyles.adminInfo}>
+                <div style={headerStyles.adminName}>
+                  {user?.username || 'System Admin'}
+                </div>
+                <div style={headerStyles.adminRole}>
+                  <FaCog style={{ fontSize: '10px' }} />
+                  Administrator
+                </div>
+              </div>
+            )}
+            <FaChevronDown style={headerStyles.chevronIcon} />
+
+            {/* Enhanced Dropdown Menu */}
+            {showDropdown && (
+              <div style={headerStyles.dropdown}>
+                {/* Header */}
+                <div style={headerStyles.dropdownHeader}>
+                  <div style={headerStyles.dropdownHeaderAvatar}>
+                    <FaShieldAlt />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '4px' }}>
+                      {user?.username || 'System Admin'}
+                    </div>
+                    <div style={{ fontSize: '14px', opacity: '0.9' }}>
+                      admin@inventory.com
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: '0.8', marginTop: '2px' }}>
+                      Full System Access
+                    </div>
+                  </div>
+                </div>
+
+                {/* Admin Features Grid */}
+                <div style={headerStyles.adminFeaturesGrid}>
+                  {adminFeatures.map((feature, index) => (
+                    <div
+                      key={index}
+                      style={hoveredItem === `feature-${index}` ? 
+                        {...headerStyles.featureCard, ...headerStyles.featureCardHover} : 
+                        headerStyles.featureCard
+                      }
+                      onMouseEnter={() => setHoveredItem(`feature-${index}`)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      onClick={() => {
+                        // Handle feature click
+                        console.log(`Clicked ${feature.title}`);
+                      }}
+                    >
+                      <feature.icon 
+                        style={hoveredItem === `feature-${index}` ? 
+                          {...headerStyles.featureIcon, ...headerStyles.featureIconHover} : 
+                          headerStyles.featureIcon
+                        } 
+                      />
+                      <div 
+                        style={hoveredItem === `feature-${index}` ? 
+                          {...headerStyles.featureTitle, ...headerStyles.featureTitleHover} : 
+                          headerStyles.featureTitle
+                        }
+                      >
+                        {feature.title}
+                      </div>
+                      <div 
+                        style={hoveredItem === `feature-${index}` ? 
+                          {...headerStyles.featureDesc, ...headerStyles.featureDescHover} : 
+                          headerStyles.featureDesc
+                        }
+                      >
+                        {feature.desc}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div style={headerStyles.dropdownDivider}></div>
+
+                {/* Logout */}
+                <div
+                  style={hoveredItem === 'logout' ? 
+                    {...headerStyles.logoutButton, ...headerStyles.logoutButtonHover} : 
+                    headerStyles.logoutButton
+                  }
+                  onMouseEnter={() => setHoveredItem('logout')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  onClick={handleLogout}
+                >
+                  <FaSignOutAlt />
+                  Logout from System
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Overlay for dropdown */}
+        {showDropdown && (
+          <div
+            style={headerStyles.overlay}
+            onClick={() => setShowDropdown(false)}
           />
-        </div>
-
-        {/* Notifications */}
-        <div
-          style={getNavItemStyle('notifications')}
-          onMouseEnter={() => setHoveredItem('notifications')}
-          onMouseLeave={() => setHoveredItem(null)}
-          onClick={() => setShowNotifications(!showNotifications)}
-        >
-          <FaBell style={headerStyles.navIcon} />
-          <div style={headerStyles.notificationBadge}>3</div>
-        </div>
-
-        {/* Settings */}
-        <div
-          style={getNavItemStyle('settings')}
-          onMouseEnter={() => setHoveredItem('settings')}
-          onMouseLeave={() => setHoveredItem(null)}
-        >
-          <FaCog style={headerStyles.navIcon} />
-        </div>
-
-        {/* User Section */}
-        <div
-          style={{
-            ...headerStyles.userSection,
-            background: hoveredItem === 'user' || showDropdown
-              ? 'rgba(255, 255, 255, 0.25)'
-              : 'rgba(255, 255, 255, 0.15)',
-          }}
-          onMouseEnter={() => setHoveredItem('user')}
-          onMouseLeave={() => setHoveredItem(null)}
-          onClick={() => setShowDropdown(!showDropdown)}
-        >
-          <div style={headerStyles.userAvatar}>
-            <FaUser />
-          </div>
-          <div style={headerStyles.userInfo}>
-            <div style={headerStyles.userName}>
-              {user?.username || 'Admin'}
-            </div>
-            <div style={headerStyles.userRole}>
-              Administrator
-            </div>
-          </div>
-
-          {/* User Dropdown */}
-          {showDropdown && (
-            <div style={headerStyles.dropdown}>
-              {/* Dropdown Header */}
-              <div style={headerStyles.dropdownHeader}>
-                <div style={{
-                  ...headerStyles.userAvatar,
-                  width: '48px',
-                  height: '48px',
-                  fontSize: '18px',
-                }}>
-                  <FaUser />
-                </div>
-                <div>
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1f2937',
-                    marginBottom: '2px',
-                  }}>
-                    {user?.username || 'Admin'}
-                  </div>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#6b7280',
-                  }}>
-                    admin@inventory.com
-                  </div>
-                </div>
-              </div>
-
-              {/* Dropdown Items */}
-              <div
-                style={getDropdownItemStyle('profile')}
-                onMouseEnter={() => setHoveredItem('profile')}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                <FaUser style={headerStyles.dropdownIcon} />
-                Profile Settings
-              </div>
-
-              <div
-                style={getDropdownItemStyle('preferences')}
-                onMouseEnter={() => setHoveredItem('preferences')}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                <FaCog style={headerStyles.dropdownIcon} />
-                Preferences
-              </div>
-
-              {/* Divider */}
-              <hr style={{
-                margin: '8px 20px',
-                border: 'none',
-                borderTop: '1px solid rgba(0, 0, 0, 0.1)',
-              }} />
-
-              {/* Logout */}
-              <div
-                style={{
-                  ...getDropdownItemStyle('logout'),
-                  background: hoveredItem === 'logout' 
-                    ? 'linear-gradient(135deg, #ef4444, #dc2626)' 
-                    : 'transparent',
-                }}
-                onMouseEnter={() => setHoveredItem('logout')}
-                onMouseLeave={() => setHoveredItem(null)}
-                onClick={handleLogout}
-              >
-                <FaSignOutAlt style={headerStyles.dropdownIcon} />
-                Logout
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Click outside to close dropdown */}
-      {showDropdown && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 998,
-          }}
-          onClick={() => setShowDropdown(false)}
-        />
-      )}
-    </header>
+        )}
+      </header>
+    </>
   );
 };
 
