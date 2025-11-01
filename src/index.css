@@ -1,0 +1,106 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.sidebar {
+  background-color: #343a40;
+  min-height: 100vh;
+  transition: all 0.3s;
+}
+
+.sidebar .nav-link {
+  color: #adb5bd;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #495057;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  color: #fff;
+  background-color: #495057;
+}
+
+.main-content {
+  background-color: #fff;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.card-metric {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+
+.card-alert {
+  border-left: 4px solid #dc3545;
+}
+
+.card-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.overdue {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.search-suggestion {
+  border: 1px solid #ced4da;
+  border-top: none;
+  background: white;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  width: 100%;
+  z-index: 1000;
+}
+
+.search-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.search-suggestion-item:hover {
+  background-color: #f8f9fa;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
