@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBars, FaUser, FaSignOutAlt, FaChevronDown, FaCog, FaShieldAlt, FaChartLine, FaDatabase } from 'react-icons/fa';
+import { FaBars, FaUser, FaChevronDown, FaCog, FaShieldAlt, FaChartLine, FaDatabase, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Header = ({ toggleSidebar }) => {
@@ -29,6 +29,7 @@ const Header = ({ toggleSidebar }) => {
     };
   }, []);
 
+  // Logout handler
   const handleLogout = () => {
     logout();
     setShowDropdown(false);

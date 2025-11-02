@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // Try to make a test API call to validate token
-      const response = await api.get('/auth/validate'); 
+      const response = await api.get('/auth/validate'); // හෝ ඔබේ protected endpoint එකක්
       return response.status === 200;
     } catch (error) {
       console.error('Token validation failed:', error);
@@ -43,10 +43,11 @@ export const AuthProvider = ({ children }) => {
         
         if (isValid) {
           setIsAuthenticated(true);
-          setUser({ username: 'admin' }); 
+          setUser({ username: 'admin' }); // Backend එකෙන් user data ගන්න පුළුවන්
           console.log('Token is valid, user authenticated');
         } else {
-          
+          // Token invalid නම් clear කරන්න
+          console.log('Token is invalid, clearing localStorage');
           localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
         }
@@ -60,10 +61,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      //console.log('Attempting login for user:', username);
+      console.log('Attempting login for user:', username);
       const response = await api.post('/auth/login', { username, password });
       
-      //console.log('Full login response:', response.data);
+      console.log('Full login response:', response.data);
 
       // Check different possible property names for the token
       const token = response.data.token ||
@@ -71,7 +72,7 @@ export const AuthProvider = ({ children }) => {
                    response.data.jwt ||
                    response.data.authToken;
 
-     // console.log('Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
+      console.log('Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
 
       if (token) {
         // Save token
@@ -83,7 +84,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
 
-        //console.log('Login successful');
+        console.log('Login successful');
         return { success: true };
       } else {
         console.error('No token found in response. Response data:', response.data);

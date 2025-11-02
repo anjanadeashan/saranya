@@ -273,70 +273,8 @@ const StockAvailabilityChecker = ({ products, saleItems, onStockWarning }) => {
   );
 };
 
-// FIFO Batch Information Component
-const FIFOBatchInfo = ({ productId, requestedQuantity }) => {
-  const [batchInfo, setBatchInfo] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!productId || !requestedQuantity) return;
-    
-    const fetchBatchInfo = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(`/inventory/available-stock/${productId}`);
-        const batches = response.data || [];
-        
-        let remaining = requestedQuantity;
-        const usedBatches = [];
-        
-        for (const batch of batches) {
-          if (remaining <= 0) break;
-          
-          const quantityFromBatch = Math.min(remaining, batch.quantity);
-          usedBatches.push({
-            ...batch,
-            quantityUsed: quantityFromBatch
-          });
-          remaining -= quantityFromBatch;
-        }
-        
-        setBatchInfo(usedBatches);
-      } catch (error) {
-        console.warn('Error fetching batch info:', error.message);
-        setBatchInfo([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchBatchInfo();
-  }, [productId, requestedQuantity]);
-
-  if (loading) return <div className="batch-info-loading">Loading batch info...</div>;
-  if (batchInfo.length === 0) return null;
-
-  return (
-    <div className="fifo-batch-info">
-      <h5>FIFO Batches (Oldest First)</h5>
-      <div className="batch-list">
-        {batchInfo.map((batch, index) => (
-          <div key={batch.id || index} className="batch-item">
-            <div className="batch-date">
-              {formatDate(batch.date)}
-            </div>
-            <div className="batch-details">
-              Cost: {formatCurrency(batch.unitPrice)} × {batch.quantityUsed}
-            </div>
-            <div className="batch-available">
-              Available: {batch.quantity}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+// FIFO Batch Information Component - REMOVED
+// Simplified bill creation without FIFO batch view
 
 // FIXED: Enhanced Product Dropdown Component
 const SearchableProductDropdown = ({ 
@@ -738,7 +676,6 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [stockWarnings, setStockWarnings] = useState([]);
-  const [showBatchInfo, setShowBatchInfo] = useState(false);
 
   useEffect(() => {
     if (formData.saleItems && formData.saleItems.length > 0) {
@@ -1008,7 +945,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         <div className="sales-modal" onClick={(e) => e.stopPropagation()}>
           <div>
             <h2 className="sales-modal-title">Sale #{sale.id} Details</h2>
-            
+
             <div className="sales-invoice-actions">
               <button onClick={() => printInvoice(sale)} className="sales-invoice-button">
                 Print Invoice
@@ -1198,13 +1135,6 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                 <div>
                   <button
                     type="button"
-                    onClick={() => setShowBatchInfo(!showBatchInfo)}
-                    className="sales-batch-info-toggle"
-                  >
-                    {showBatchInfo ? 'Hide' : 'Show'} Batch Info
-                  </button>
-                  <button
-                    type="button"
                     onClick={addItem}
                     disabled={saving}
                     className="sales-add-item-button"
@@ -1299,13 +1229,6 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                         )}
                       </div>
                     </div>
-                    
-                    {showBatchInfo && item.productId && item.quantity && (
-                      <FIFOBatchInfo 
-                        productId={item.productId}
-                        requestedQuantity={parsePositiveInteger(item.quantity) || 0}
-                      />
-                    )}
                   </div>
                 ))}
               </div>
@@ -1355,6 +1278,19 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
 
 // ===== INVOICE GENERATION =====
 const generateInvoiceHTML = (sale, products) => {
+  const getProductName = (item) => {
+    if (item.product && item.product.name) {
+      return item.product.name;
+    }
+    if (item.productId && products && products.length > 0) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && product.name) {
+        return product.name;
+      }
+    }
+    return 'Unknown Product';
+  };
+
   const getProductCode = (item) => {
     if (item.product && item.product.code) {
       return item.product.code;
@@ -1365,11 +1301,55 @@ const generateInvoiceHTML = (sale, products) => {
         return product.code;
       }
     }
-    return 'Unknown Code';
+    return '';
   };
 
   const customerName = getCustomerName(sale);
   const customerEmail = getCustomerEmail(sale);
+  const customerAddress = sale.customer?.address || 'N/A';
+  const customerPhone = sale.customer?.phone || 'N/A';
+
+  // Consolidate duplicate products into single lines
+  const consolidatedItems = [];
+  const itemMap = new Map();
+
+  sale.saleItems?.forEach(item => {
+    const productName = getProductName(item);
+    const productCode = getProductCode(item);
+    const fullName = productCode ? `${productName} (${productCode})` : productName;
+    const size = item.size || '';
+    const unitPrice = item.unitPrice || 0;
+
+    // Create unique key based on product name, code, size, and unit price
+    const key = `${fullName}_${size}_${unitPrice}`;
+
+    if (itemMap.has(key)) {
+      // Add to existing item
+      const existing = itemMap.get(key);
+      existing.quantity += (item.quantity || 0);
+      existing.discount += (item.discount || 0);
+      existing.total = (existing.quantity * existing.unitPrice) - existing.discount;
+    } else {
+      // Create new consolidated item
+      itemMap.set(key, {
+        fullName: fullName,
+        size: size,
+        quantity: item.quantity || 0,
+        unitPrice: unitPrice,
+        discount: item.discount || 0,
+        total: ((item.quantity || 0) * unitPrice) - (item.discount || 0)
+      });
+    }
+  });
+
+  // Convert map to array
+  itemMap.forEach(item => consolidatedItems.push(item));
+
+  // Calculate totals
+  const subTotal = consolidatedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const totalDiscount = consolidatedItems.reduce((sum, item) => sum + item.discount, 0);
+  const grandTotal = sale.totalAmount || 0;
+  const totalQty = consolidatedItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return `
     <!DOCTYPE html>
@@ -1379,96 +1359,282 @@ const generateInvoiceHTML = (sale, products) => {
       <title>Invoice #${sale.id}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-        .invoice-container { max-width: 900px; margin: 0 auto; background: white; }
-        .invoice-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px; }
-        .company-name { font-size: 28px; font-weight: bold; color: #007bff; margin-bottom: 5px; }
-        .invoice-title { font-size: 24px; font-weight: bold; margin: 20px 0; }
-        .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 30px; }
-        .invoice-meta div { flex: 1; }
-        .meta-label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; }
-        .meta-value { font-size: 16px; margin-top: 5px; }
-        .customer-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-        .section-title { font-weight: bold; color: #007bff; margin-bottom: 10px; }
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        .items-table th, .items-table td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
-        .items-table th { background: #f8f9fa; font-weight: bold; color: #495057; }
+        body {
+          font-family: 'Arial', sans-serif;
+          padding: 30px;
+          color: #000;
+          background: #fff;
+        }
+        .invoice-container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
+          border: 2px solid #000;
+          padding: 20px;
+        }
+        .invoice-header {
+          text-align: center;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 15px;
+        }
+        .company-name {
+          font-size: 24px;
+          font-weight: bold;
+          letter-spacing: 2px;
+          margin-bottom: 5px;
+        }
+        .company-tagline {
+          font-size: 11px;
+          font-weight: bold;
+          margin-bottom: 8px;
+        }
+        .company-details {
+          font-size: 10px;
+          line-height: 1.5;
+          margin-bottom: 5px;
+        }
+        .factory-info {
+          font-size: 9px;
+          line-height: 1.4;
+          margin-top: 5px;
+        }
+        .invoice-title {
+          font-size: 20px;
+          font-weight: bold;
+          margin: 15px 0 10px 0;
+          letter-spacing: 3px;
+        }
+        .invoice-meta {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 15px;
+          font-size: 11px;
+        }
+        .invoice-meta-left {
+          width: 60%;
+        }
+        .invoice-meta-right {
+          width: 38%;
+          text-align: right;
+        }
+        .meta-row {
+          margin-bottom: 4px;
+        }
+        .meta-label {
+          font-weight: bold;
+          display: inline-block;
+          width: 120px;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 0;
+          font-size: 11px;
+        }
+        .items-table th, .items-table td {
+          padding: 8px 6px;
+          text-align: left;
+          border: 1px solid #000;
+        }
+        .items-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+          text-align: center;
+        }
+        .items-table .text-center { text-align: center; }
         .items-table .text-right { text-align: right; }
-        .totals-section { text-align: right; margin-top: 20px; }
-        .grand-total { font-size: 18px; font-weight: bold; color: #007bff; border-top: 2px solid #007bff; padding-top: 10px; margin-top: 10px; }
-        .status-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; text-transform: uppercase; font-size: 12px; }
-        .status-paid { background: #d4edda; color: #155724; }
-        .status-unpaid { background: #f8d7da; color: #721c24; }
-        @media print { body { padding: 0; } .no-print { display: none; } }
+        .items-table tbody td {
+          min-height: 30px;
+        }
+        .totals-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+          margin-top: 0;
+        }
+        .totals-table td {
+          padding: 8px 6px;
+          border: 1px solid #000;
+        }
+        .totals-table .total-label {
+          text-align: right;
+          font-weight: bold;
+          width: 70%;
+        }
+        .totals-table .total-qty {
+          text-align: center;
+          width: 10%;
+        }
+        .totals-table .total-amount {
+          text-align: right;
+          width: 20%;
+        }
+        .grand-total-row {
+          font-weight: bold;
+          font-size: 12px;
+        }
+        .signature-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 50px;
+          padding: 0 30px;
+        }
+        .signature-block {
+          text-align: center;
+          width: 200px;
+        }
+        .signature-line {
+          border-bottom: 1px solid #000;
+          margin-bottom: 5px;
+          height: 50px;
+        }
+        .signature-label {
+          font-size: 11px;
+          font-weight: bold;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 2px solid #000;
+          font-size: 11px;
+        }
+        .footer-company {
+          font-weight: bold;
+          font-size: 12px;
+          margin-bottom: 3px;
+        }
+        .thank-you {
+          font-weight: bold;
+          margin-bottom: 10px;
+          font-size: 12px;
+        }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+          .invoice-container { border: 1px solid #000; }
+        }
       </style>
     </head>
     <body>
       <div class="invoice-container">
         <div class="invoice-header">
-          <div class="company-name">Saranya International</div>
+          <div class="company-name">SARANYA INTERNATIONAL</div>
+          <div class="company-tagline">BEST QUALITY INTERNAARMENT FACTORIES</div>
           <div class="company-details">
-            No 325/7C, Kande Dewala Road, Pelenwattha, Pannipitiya, Sri Lanka<br>
-            Phone: 011 274 5833 | Email: internationalsaranya@gmail.com
+            <strong>Office:</strong> 0112 745 833 / 0719 666 676 &nbsp;&nbsp; <strong>Email:</strong> internationalsaranya@gmail.com
+          </div>
+          <div class="factory-info">
+            <strong>Factory :</strong> Hadiden kanda Road,nattugama, Badimalana - 0755 666 676<br>
+            <strong>Factory :</strong> Kadaruwewa,Poipitigama,Karamegala - 0766 776 676<br>
+            <strong>Factory :</strong> Millagha Junction,Horana road,Kaluthara - 078 776 676
           </div>
           <div class="invoice-title">INVOICE</div>
         </div>
+
         <div class="invoice-meta">
-          <div>
-            <div class="meta-label">Invoice Number</div>
-            <div class="meta-value">#${sale.id}</div>
+          <div class="invoice-meta-left">
+            <div class="meta-row">
+              <span class="meta-label">Customer Na:</span>
+              <span>${sale.id || 'N/A'}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Customer Name:</span>
+              <span>${customerName}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Customer Address:</span>
+              <span>${customerAddress}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Contact No:</span>
+              <span>${customerPhone}</span>
+            </div>
           </div>
-          <div>
-            <div class="meta-label">Date</div>
-            <div class="meta-value">${formatDateInvoice(sale.saleDate)}</div>
-          </div>
-          <div>
-            <div class="meta-label">Status</div>
-            <div class="meta-value">
-              <span class="status-badge ${sale.isPaid ? 'status-paid' : 'status-unpaid'}">
-                ${sale.isPaid ? 'Paid' : 'Unpaid'}
-              </span>
+          <div class="invoice-meta-right">
+            <div class="meta-row">
+              <span class="meta-label">Inv. No:</span>
+              <span>${sale.id}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Date:</span>
+              <span>${formatDateInvoice(sale.saleDate)}</span>
             </div>
           </div>
         </div>
-        <div class="customer-section">
-          <div class="section-title">Bill To:</div>
-          <div style="font-size: 16px; font-weight: bold;">${customerName}</div>
-          ${customerEmail !== 'No email' ? `<div>Email: ${customerEmail}</div>` : ''}
-          ${sale.customer?.phone ? `<div>Phone: ${sale.customer.phone}</div>` : ''}
-        </div>
+
         <table class="items-table">
           <thead>
             <tr>
-              <th style="width: 40%;">Item Code</th>
-              <th style="width: 15%;" class="text-right">Qty</th>
-              <th style="width: 15%;" class="text-right">Unit Price</th>
-              <th style="width: 15%;" class="text-right">Discount</th>
-              <th style="width: 15%;" class="text-right">Total</th>
+              <th style="width: 8%;">No.</th>
+              <th style="width: 42%;">Product's Name</th>
+              <th style="width: 12%;">Size</th>
+              <th style="width: 10%;">Qty</th>
+              <th style="width: 14%;">Unit Price</th>
+              <th style="width: 14%;">Total</th>
             </tr>
           </thead>
           <tbody>
-            ${sale.saleItems?.map(item => `
+            ${consolidatedItems.map((item, index) => {
+              return `
               <tr>
-                <td>
-                  <div style="font-weight: bold;">${getProductCode(item)}</div>
-                </td>
-                <td class="text-right">${item.quantity || 0}</td>
-                <td class="text-right">${formatCurrencyInvoice(item.unitPrice)}</td>
-                <td class="text-right">${formatCurrencyInvoice(item.discount || 0)}</td>
-                <td class="text-right">${formatCurrencyInvoice(item.lineTotal)}</td>
+                <td class="text-center">${index + 1}</td>
+                <td>${item.fullName}</td>
+                <td class="text-center">${item.size}</td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-right">${item.unitPrice.toFixed(2)}</td>
+                <td class="text-right">${(item.quantity * item.unitPrice).toFixed(2)}</td>
               </tr>
-            `).join('') || '<tr><td colspan="5">No items found</td></tr>'}
+            `}).join('') || '<tr><td colspan="6" style="text-align: center;">No items found</td></tr>'}
+            ${Array(Math.max(0, 10 - consolidatedItems.length)).fill('').map(() => `
+              <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
-        <div class="totals-section">
-          <div class="grand-total">
-            <span>Grand Total:</span>
-            <span>${formatCurrencyInvoice(sale.totalAmount)}</span>
+
+        <table class="totals-table">
+          <tr>
+            <td class="total-label">Sub Total</td>
+            <td class="total-qty">${totalQty}</td>
+            <td class="total-amount">${subTotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td class="total-label">Less : Discount</td>
+            <td class="total-qty"></td>
+            <td class="total-amount">${totalDiscount.toFixed(2)}</td>
+          </tr>
+          <tr class="grand-total-row">
+            <td class="total-label">Grand Total</td>
+            <td class="total-qty">${totalQty}</td>
+            <td class="total-amount">${grandTotal.toFixed(2)}</td>
+          </tr>
+        </table>
+
+        <div class="signature-section">
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">Account Executive</div>
+          </div>
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">Purchaser</div>
           </div>
         </div>
-        <div class="footer" style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #666; font-size: 12px;">
-          <div>Thank you for your business!</div>
-          <div>This is a computer generated invoice.</div>
+
+        <div class="footer">
+          <div class="thank-you">Cheques & Cash Deposits !</div>
+          <div class="footer-company">"SARANYA INTERNATIONAL"</div>
+          <div>0980 1002 6028 - HNB - Kottawa</div>
+          <div>0082 5000 1844 - SampathBank - Nawala</div>
+          <div>0112 745833 / 0719 666676</div>
         </div>
       </div>
     </body>
@@ -1489,6 +1655,7 @@ const SalesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
+  const [filterCheckStatus, setFilterCheckStatus] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [checkReminders, setCheckReminders] = useState([]);
@@ -1631,26 +1798,30 @@ const SalesPage = () => {
   };
 
   // FIXED: Filtering Logic with proper customer name handling
-  const filteredSales = Array.isArray(sales) 
+  const filteredSales = Array.isArray(sales)
     ? sales.filter(sale => {
         if (!sale) return false;
-        
+
         const searchLower = searchTerm.toLowerCase();
         const customerName = getCustomerName(sale);
-        
-        const matchesSearch = !searchTerm || 
+
+        const matchesSearch = !searchTerm ||
           (customerName && customerName.toLowerCase().includes(searchLower)) ||
           (sale.id && sale.id.toString().includes(searchTerm)) ||
           (sale.checkNumber && sale.checkNumber.toLowerCase().includes(searchLower));
 
-        const matchesStatus = filterStatus === 'ALL' || 
+        const matchesStatus = filterStatus === 'ALL' ||
           (filterStatus === 'PAID' && sale.isPaid) ||
           (filterStatus === 'UNPAID' && !sale.isPaid);
 
-        const matchesPaymentMethod = filterPaymentMethod === 'ALL' || 
+        const matchesPaymentMethod = filterPaymentMethod === 'ALL' ||
           sale.paymentMethod === filterPaymentMethod;
 
-        return matchesSearch && matchesStatus && matchesPaymentMethod;
+        const matchesCheckStatus = filterCheckStatus === 'ALL' ||
+          (filterCheckStatus === 'BOUNCED' && sale.checkBounced) ||
+          (filterCheckStatus === 'NOT_BOUNCED' && sale.paymentMethod === 'CREDIT_CHECK' && !sale.checkBounced);
+
+        return matchesSearch && matchesStatus && matchesPaymentMethod && matchesCheckStatus;
       })
     : [];
 
@@ -1729,18 +1900,7 @@ const SalesPage = () => {
   return (
     <div className="sales-page-container">
       <div>
-        {/* Inventory Summary Banner */}
-        {inventorySummary && (
-          <div className="inventory-summary-banner">
-            <h3>Inventory Status</h3>
-            <div className="inventory-summary-stats">
-              <div>Products with Stock: {inventorySummary.productsWithStock}</div>
-              <div>Total Inventory Value: {formatCurrency(inventorySummary.totalInventoryValue)}</div>
-              <div>Low Stock Products: {inventorySummary.lowStockProducts}</div>
-              <div>Total Batches: {inventorySummary.totalBatches}</div>
-            </div>
-          </div>
-        )}
+        
 
         {/* Bounced Checks Alert */}
         {bouncedCheckSummary && bouncedCheckSummary.totalBouncedChecks > 0 && (
@@ -1850,14 +2010,20 @@ const SalesPage = () => {
               </select>
             </div>
 
-            <div className="sales-stats">
-              <div className="sales-stats-count">
-                Total Sales: {filteredSales.length}
-              </div>
-              <div className="sales-stats-revenue">
-                Revenue: {formatCurrency(filteredSales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0))}
-              </div>
+            <div>
+              <label className="sales-filter-label">Check Status</label>
+              <select
+                value={filterCheckStatus}
+                onChange={(e) => setFilterCheckStatus(e.target.value)}
+                className="sales-filter-select"
+              >
+                <option value="ALL">All Checks</option>
+                <option value="BOUNCED">Returned/Bounced</option>
+                <option value="NOT_BOUNCED">Active Checks</option>
+              </select>
             </div>
+
+            
           </div>
         </div>
 
@@ -1948,8 +2114,8 @@ const SalesPage = () => {
                       <div>
                         <div className="sales-empty-title">No sales found</div>
                         <div className="sales-empty-subtitle">
-                          {searchTerm || filterStatus !== 'ALL' || filterPaymentMethod !== 'ALL' 
-                            ? 'Try adjusting your filters' 
+                          {searchTerm || filterStatus !== 'ALL' || filterPaymentMethod !== 'ALL' || filterCheckStatus !== 'ALL'
+                            ? 'Try adjusting your filters'
                             : 'Create your first sale to get started'}
                         </div>
                       </div>

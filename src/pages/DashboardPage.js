@@ -148,63 +148,40 @@ const DashboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [authError, setAuthError] = useState(false);
-  
-  // Login state for quick testing
-  const [showLogin, setShowLogin] = useState(false);
-  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
 
   useEffect(() => {
-    const token = authUtils.getToken();
-    if (!token || authUtils.isTokenExpired(token)) {
-      setAuthError(true);
-      setLoading(false);
-    } else {
-      fetchDashboardData();
-    }
+    // Load data from backend (no authentication required)
+    fetchDashboardData();
   }, []);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await api.login(loginCredentials.username, loginCredentials.password);
-      setAuthError(false);
-      setShowLogin(false);
-      await fetchDashboardData();
-    } catch (error) {
-      setError(`Login failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
-      setAuthError(false);
 
-      // Fetch all data from your existing endpoints
+      // Fetch all data from backend endpoints (no authentication required)
       const [salesRes, customersRes, productsRes, suppliersRes, inventoryRes] = await Promise.all([
         api.get('/sales').catch(err => {
-          if (err.message.includes('Authentication')) {
-            setAuthError(true);
-          }
+          console.error('Error fetching sales:', err);
           return { data: [] };
         }),
-        api.get('/customers').catch(err => ({ data: [] })),
-        api.get('/products').catch(err => ({ data: [] })),
-        api.get('/suppliers').catch(err => ({ data: [] })),
-        api.get('/inventory').catch(err => ({ data: [] }))
+        api.get('/customers').catch(err => {
+          console.error('Error fetching customers:', err);
+          return { data: [] };
+        }),
+        api.get('/products').catch(err => {
+          console.error('Error fetching products:', err);
+          return { data: [] };
+        }),
+        api.get('/suppliers').catch(err => {
+          console.error('Error fetching suppliers:', err);
+          return { data: [] };
+        }),
+        api.get('/inventory').catch(err => {
+          console.error('Error fetching inventory:', err);
+          return { data: [] };
+        })
       ]);
-
-      // If we got an auth error, stop processing
-      if (authError) {
-        return;
-      }
 
       const salesData = Array.isArray(salesRes.data) ? salesRes.data : [];
       const customersData = Array.isArray(customersRes.data) ? customersRes.data : [];
@@ -218,40 +195,10 @@ const DashboardPage = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      if (error.message.includes('Authentication') || error.message.includes('log in')) {
-        setAuthError(true);
-      } else {
-        setError('Failed to load dashboard data');
-      }
+      setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    authUtils.removeToken();
-    setAuthError(true);
-    setDashboardData({
-      summary: {
-        totalProducts: 0,
-        totalSales: 0,
-        lowStockCount: 0,
-        pendingChecks: 0,
-        totalCustomers: 0,
-        totalSuppliers: 0,
-        totalRevenue: 0,
-        unpaidSales: 0
-      },
-      lowStockAlerts: [],
-      topProducts: [],
-      checkReminders: [],
-      recentSales: [],
-      salesAnalytics: {
-        monthlySales: [],
-        salesByPaymentMethod: [],
-        salesTrends: []
-      }
-    });
   };
 
   // Helper function to create lookup maps
@@ -537,103 +484,6 @@ const DashboardPage = () => {
       </div>
     );
   };
-
-  // Authentication Error Screen
-  if (authError) {
-    return (
-      <div className="dashboard-container">
-        <div className="dashboard-error-container">
-          <div className="dashboard-error-text">
-            Authentication Required
-            <p style={{fontSize: '14px', marginTop: '10px', color: '#666'}}>
-              Please log in to access the dashboard
-            </p>
-          </div>
-          
-          {!showLogin && (
-            <button 
-              onClick={() => setShowLogin(true)}
-              className="dashboard-retry-button"
-            >
-              Login
-            </button>
-          )}
-          
-          {showLogin && (
-            <form onSubmit={handleLogin} style={{marginTop: '20px', maxWidth: '300px'}}>
-              <div style={{marginBottom: '15px'}}>
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={loginCredentials.username}
-                  onChange={(e) => setLoginCredentials({...loginCredentials, username: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                  required
-                />
-              </div>
-              <div style={{marginBottom: '15px'}}>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={loginCredentials.password}
-                  onChange={(e) => setLoginCredentials({...loginCredentials, password: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                  required
-                />
-              </div>
-              <div style={{display: 'flex', gap: '10px'}}>
-                <button 
-                  type="submit" 
-                  className="dashboard-retry-button"
-                  disabled={loading}
-                >
-                  {loading ? 'Logging in...' : 'Login'}
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setShowLogin(false)}
-                  style={{
-                    padding: '10px 20px',
-                    border: '1px solid #ddd',
-                    background: 'white',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-          
-          {error && (
-            <div style={{
-              marginTop: '15px',
-              padding: '10px',
-              background: '#fee2e2',
-              color: '#dc2626',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}>
-              {error}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -931,27 +781,7 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="dashboard-widget-card">
-        <h2 className="dashboard-widget-title">⚡ Quick Actions</h2>
-        <div className="quick-actions-grid">
-          <button className="quick-action-btn primary">
-            Create New Sale
-          </button>
-          
-          <button className="quick-action-btn success">
-            Add Product
-          </button>
-          
-          <button className="quick-action-btn warning">
-            Update Inventory
-          </button>
-          
-          <button className="quick-action-btn info">
-            View Reports
-          </button>
-        </div>
-      </div>
+      
     </div>
   );
 };

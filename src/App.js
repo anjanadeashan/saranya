@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import DashboardPage from './pages/DashboardPage';
 import ProductManagementPage from './pages/ProductManagementPage';
 import SupplierManagementPage from './pages/SupplierManagementPage';
@@ -11,7 +12,6 @@ import CustomerManagementPage from './pages/CustomerManagementPage';
 import InventoryManagementPage from './pages/InventoryManagementPage';
 import SalesPage from './pages/SalesPage';
 import AccountingReportsPage from './pages/AccountingReportsSystem'
-import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -20,11 +20,7 @@ function App() {
         <div className="App">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="products" element={<ProductManagementPage />} />
@@ -32,7 +28,7 @@ function App() {
               <Route path="customers" element={<CustomerManagementPage />} />
               <Route path="inventory" element={<InventoryManagementPage />} />
               <Route path="sales" element={<SalesPage />} />
-              <Route path="reports" element={<AccountingReportsPage />} /> {/* NEW */}
+              <Route path="reports" element={<AccountingReportsPage />} />
             </Route>
           </Routes>
           <ToastContainer

@@ -15,6 +15,10 @@ const SupplierManagementPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('testing');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedSupplierForPayment, setSelectedSupplierForPayment] = useState(null);
+  const [showFinancialSummary, setShowFinancialSummary] = useState(false);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
 
   // ============================================================================
   // UTILITY FUNCTIONS
@@ -137,22 +141,40 @@ const SupplierManagementPage = () => {
 
       // Extract suppliers using our enhanced function
       const suppliersData = extractSuppliersFromResponse(response.data);
-      
+
       console.log('--- SUPPLIERS EXTRACTION RESULT ---');
       console.log('Extracted suppliers count:', suppliersData.length);
-      
+
       if (suppliersData.length === 0) {
-        console.error('ERROR: No suppliers extracted from response!');
-        console.error('This could mean:');
-        console.error('1. API returned empty data');
-        console.error('2. Response structure is not recognized');
-        console.error('3. Suppliers are nested in an unexpected property');
-        console.error('Raw response for investigation:', response.data);
-        
+        console.log('INFO: No suppliers in database (empty array returned from API)');
+        console.log('This is normal when starting fresh or after deleting all suppliers');
+        console.log('Raw response:', response.data);
+
+        // This is NOT an error - just an empty database
         setSuppliers([]);
-        setError('No suppliers found in response. Please check server logs.');
+        setError(null); // Clear any previous errors
+        setLoading(false);
         return;
       }
+
+      // Normalize suppliers - add default financial values if backend hasn't been updated yet
+      const normalizedSuppliers = suppliersData.map(supplier => ({
+        ...supplier,
+        outstandingBalance: supplier.outstandingBalance ?? 0,
+        totalPurchases: supplier.totalPurchases ?? 0,
+        totalPaid: supplier.totalPaid ?? 0,
+        creditLimit: supplier.creditLimit ?? 0
+      }));
+
+      console.log('--- NORMALIZED SUPPLIERS WITH FINANCIAL DATA ---');
+      normalizedSuppliers.forEach((supplier, index) => {
+        console.log(`Supplier ${index + 1} [${supplier.name}]:`, {
+          outstandingBalance: supplier.outstandingBalance,
+          totalPurchases: supplier.totalPurchases,
+          totalPaid: supplier.totalPaid,
+          creditLimit: supplier.creditLimit
+        });
+      });
 
       // Log each supplier for verification
       console.log('--- INDIVIDUAL SUPPLIERS ---');
@@ -169,7 +191,7 @@ const SupplierManagementPage = () => {
       });
 
       // Validate suppliers have required fields
-      const validSuppliers = suppliersData.filter(supplier => {
+      const validSuppliers = normalizedSuppliers.filter(supplier => {
         const isValid = supplier && 
                        supplier.id && 
                        supplier.name && 
@@ -184,12 +206,12 @@ const SupplierManagementPage = () => {
       });
 
       console.log('--- VALIDATION RESULT ---');
-      console.log('Original count:', suppliersData.length);
+      console.log('Original count:', normalizedSuppliers.length);
       console.log('Valid count after filtering:', validSuppliers.length);
-      
-      if (validSuppliers.length !== suppliersData.length) {
+
+      if (validSuppliers.length !== normalizedSuppliers.length) {
         console.warn('Some suppliers were filtered out due to missing required fields');
-        const invalidSuppliers = suppliersData.filter(s => !validSuppliers.includes(s));
+        const invalidSuppliers = normalizedSuppliers.filter(s => !validSuppliers.includes(s));
         console.warn('Invalid suppliers:', invalidSuppliers);
       }
 
@@ -375,24 +397,102 @@ const SupplierManagementPage = () => {
     setShowModal(true);
   };
 
+  const handleRecordPayment = (supplier) => {
+    console.log('Recording payment for supplier:', supplier);
+    setSelectedSupplierForPayment(supplier);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSubmit = async (paymentData) => {
+    try {
+      console.log('Recording payment:', paymentData);
+      await api.put(`/suppliers/${selectedSupplierForPayment.id}/payment?amount=${paymentData.amount}`);
+
+      setShowPaymentModal(false);
+      setSelectedSupplierForPayment(null);
+      await fetchSuppliers();
+      alert('Payment recorded successfully!');
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      alert('Failed to record payment: ' + (error.message || 'Unknown error'));
+    }
+  };
+
+  const getOutstandingStatusClass = (outstanding, creditLimit) => {
+    if (!outstanding || !creditLimit) return '';
+    const percentage = (outstanding / creditLimit) * 100;
+    if (percentage >= 80) return 'outstanding-danger';
+    if (percentage >= 50) return 'outstanding-warning';
+    return 'outstanding-normal';
+  };
+
+  const calculateFinancialSummary = () => {
+    console.log('Calculating financial summary from suppliers:', suppliers);
+
+    const totalOutstanding = suppliers.reduce((sum, s) => {
+      const value = parseFloat(s.outstandingBalance) || 0;
+      console.log(`Supplier ${s.name}: outstandingBalance = ${s.outstandingBalance} -> ${value}`);
+      return sum + value;
+    }, 0);
+
+    const totalPurchases = suppliers.reduce((sum, s) => sum + (parseFloat(s.totalPurchases) || 0), 0);
+    const totalPaid = suppliers.reduce((sum, s) => sum + (parseFloat(s.totalPaid) || 0), 0);
+
+    const summary = {
+      totalOutstanding: totalOutstanding || 0,
+      totalPurchases: totalPurchases || 0,
+      totalPaid: totalPaid || 0
+    };
+
+    console.log('📊 Final Financial Summary:', summary);
+
+    // Check if backend data is missing
+    if (totalOutstanding === 0 && totalPurchases === 0 && totalPaid === 0) {
+      console.warn('⚠️ WARNING: All financial values are 0!');
+      console.warn('⚠️ This means your backend has NOT been updated yet with financial tracking fields.');
+      console.warn('⚠️ Please implement Backend Prompts 2, 3 to add these fields:');
+      console.warn('   - outstandingBalance');
+      console.warn('   - totalPurchases');
+      console.warn('   - totalPaid');
+    }
+
+    return summary;
+  };
+
   // ============================================================================
   // COMPUTED VALUES
   // ============================================================================
-  
+
   // Enhanced filtering - shows all suppliers and searches across multiple fields
-  const filteredSuppliers = Array.isArray(suppliers) 
+  const filteredSuppliers = Array.isArray(suppliers)
     ? suppliers.filter(supplier => {
         if (!supplier) {
           return false;
         }
-        
-        // If no search term, show all suppliers
+
+        // Payment status filter
+        if (paymentStatusFilter !== 'ALL') {
+          const outstandingBalance = parseFloat(supplier.outstandingBalance) || 0;
+          const totalPurchases = parseFloat(supplier.totalPurchases) || 0;
+
+          if (paymentStatusFilter === 'PAID' && outstandingBalance !== 0) {
+            return false;
+          }
+          if (paymentStatusFilter === 'PARTIAL' && (outstandingBalance === 0 || outstandingBalance >= totalPurchases)) {
+            return false;
+          }
+          if (paymentStatusFilter === 'PENDING' && (outstandingBalance !== totalPurchases || totalPurchases === 0)) {
+            return false;
+          }
+        }
+
+        // If no search term, show all suppliers (that passed payment filter)
         if (!searchTerm || !searchTerm.trim()) {
           return true;
         }
-        
+
         const searchLower = searchTerm.toLowerCase().trim();
-        
+
         // Search across multiple fields
         const searchFields = [
           supplier.name,
@@ -404,8 +504,8 @@ const SupplierManagementPage = () => {
           supplier.country,
           supplier.address
         ];
-        
-        return searchFields.some(field => 
+
+        return searchFields.some(field =>
           field && field.toString().toLowerCase().includes(searchLower)
         );
       })
@@ -561,6 +661,53 @@ const SupplierManagementPage = () => {
         </button>
       </div>
 
+      {/* Financial Summary Card */}
+      {suppliers.length > 0 && (
+        <div className="supplier-financial-summary-container">
+          <button
+            className="supplier-summary-toggle"
+            onClick={() => setShowFinancialSummary(!showFinancialSummary)}
+          >
+            {showFinancialSummary ? '▼' : '▶'} Financial Overview
+          </button>
+
+          {showFinancialSummary && (() => {
+            const financialSummary = calculateFinancialSummary();
+            console.log('Rendering Financial Summary:', financialSummary);
+
+            return (
+              <div className="supplier-financial-summary-cards">
+                <div className="supplier-summary-card">
+                  <div className="summary-card-icon">💰</div>
+                  <div className="summary-card-content">
+                    <div className="summary-card-label">Total Purchases</div>
+                    <div className="summary-card-value">{formatCurrency(financialSummary.totalPurchases)}</div>
+                  </div>
+                </div>
+
+                <div className="supplier-summary-card">
+                  <div className="summary-card-icon">✅</div>
+                  <div className="summary-card-content">
+                    <div className="summary-card-label">Total Paid</div>
+                    <div className="summary-card-value">{formatCurrency(financialSummary.totalPaid)}</div>
+                  </div>
+                </div>
+
+                <div className="supplier-summary-card outstanding-card">
+                  <div className="summary-card-icon">⏳</div>
+                  <div className="summary-card-content">
+                    <div className="summary-card-label">Outstanding Balance</div>
+                    <div className="summary-card-value outstanding-value">
+                      {formatCurrency(financialSummary.totalOutstanding)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Search */}
       <div className="supplier-search-container">
         <div className="supplier-search-input-wrapper">
@@ -572,7 +719,7 @@ const SupplierManagementPage = () => {
             className="supplier-search-input"
           />
           {searchTerm && (
-            <button 
+            <button
               onClick={() => setSearchTerm('')}
               className="supplier-clear-search"
               title="Clear search"
@@ -584,22 +731,58 @@ const SupplierManagementPage = () => {
 
       </div>
 
+      {/* Payment Status Filter */}
+      <div className="supplier-filter-container">
+        <span className="supplier-filter-label">Filter by Payment Status:</span>
+        <div className="supplier-filter-buttons">
+          <button
+            className={`supplier-filter-btn ${paymentStatusFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setPaymentStatusFilter('ALL')}
+          >
+            All Suppliers
+          </button>
+          <button
+            className={`supplier-filter-btn ${paymentStatusFilter === 'PAID' ? 'active' : ''}`}
+            onClick={() => setPaymentStatusFilter('PAID')}
+          >
+            Fully Paid
+          </button>
+          <button
+            className={`supplier-filter-btn ${paymentStatusFilter === 'PARTIAL' ? 'active' : ''}`}
+            onClick={() => setPaymentStatusFilter('PARTIAL')}
+          >
+            Partial Payment
+          </button>
+          <button
+            className={`supplier-filter-btn ${paymentStatusFilter === 'PENDING' ? 'active' : ''}`}
+            onClick={() => setPaymentStatusFilter('PENDING')}
+          >
+            Not Paid
+          </button>
+        </div>
+      </div>
+
 
       {/* Suppliers Table */}
       <div className="supplier-table-container">
-        <table className="supplier-table">
-          <thead className="supplier-table-header">
-            <tr>
-              <th className="supplier-header-cell">Supplier</th>
-              <th className="supplier-header-cell">Code</th>
-              <th className="supplier-header-cell">Contact</th>
-              <th className="supplier-header-cell">Location</th>
-              <th className="supplier-header-cell">Financial</th>
-              <th className="supplier-header-cell">Status</th>
-              <th className="supplier-header-cell">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        {/* Scroll hint for mobile */}
+        <div className="supplier-scroll-hint">
+          ← Scroll horizontally to see all columns →
+        </div>
+        <div className="supplier-table-wrapper">
+          <table className="supplier-table">
+            <thead className="supplier-table-header">
+              <tr>
+                <th className="supplier-header-cell">Supplier</th>
+                <th className="supplier-header-cell">Code</th>
+                <th className="supplier-header-cell">Contact</th>
+                <th className="supplier-header-cell">Location</th>
+                <th className="supplier-header-cell">Financial</th>
+                <th className="supplier-header-cell">Status</th>
+                <th className="supplier-header-cell">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
             {filteredSuppliers.length > 0 ? (
               filteredSuppliers.map((supplier, index) => (
                 <tr 
@@ -655,9 +838,17 @@ const SupplierManagementPage = () => {
                           Terms: {supplier.paymentTerms}
                         </div>
                       )}
-                      {supplier.outstandingAmount && (
-                        <div className="supplier-outstanding-info">
-                          Outstanding: {formatCurrency(supplier.outstandingAmount)}
+                      <div className={`supplier-outstanding-info ${getOutstandingStatusClass(supplier.outstandingBalance, supplier.creditLimit)}`}>
+                        Outstanding: {formatCurrency(supplier.outstandingBalance || 0)}
+                      </div>
+                      {(supplier.outstandingBalance > 0) && (
+                        <div className="supplier-purchase-summary">
+                          <span className="purchase-total">
+                            Purchases: {formatCurrency(supplier.totalPurchases || 0)}
+                          </span>
+                          <span className="purchase-paid">
+                            Paid: {formatCurrency(supplier.totalPaid || 0)}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -671,6 +862,15 @@ const SupplierManagementPage = () => {
                   </td>
                   <td className="supplier-table-cell">
                     <div className="supplier-actions">
+                      {(supplier.outstandingBalance > 0) && (
+                        <button
+                          className="supplier-action-button supplier-payment-button"
+                          onClick={() => handleRecordPayment(supplier)}
+                          title="Record payment"
+                        >
+                          💵 Pay
+                        </button>
+                      )}
                       <button
                         className="supplier-action-button supplier-edit-button"
                         onClick={() => handleEdit(supplier)}
@@ -736,6 +936,7 @@ const SupplierManagementPage = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Supplier Modal */}
@@ -748,6 +949,19 @@ const SupplierManagementPage = () => {
             setSelectedSupplier(null);
           }}
           saving={saving}
+          formatCurrency={formatCurrency}
+        />
+      )}
+
+      {/* Payment Recording Modal */}
+      {showPaymentModal && selectedSupplierForPayment && (
+        <PaymentModal
+          supplier={selectedSupplierForPayment}
+          onSave={handlePaymentSubmit}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedSupplierForPayment(null);
+          }}
           formatCurrency={formatCurrency}
         />
       )}
@@ -1121,6 +1335,157 @@ const SupplierModal = ({ supplier, onSave, onClose, saving, formatCurrency }) =>
                 ? (supplier ? 'Updating...' : 'Creating...') 
                 : (supplier ? 'Update Supplier' : 'Create Supplier')
               }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// PAYMENT MODAL COMPONENT
+// ============================================================================
+const PaymentModal = ({ supplier, onSave, onClose, formatCurrency }) => {
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const amount = parseFloat(paymentAmount);
+    if (!amount || amount <= 0) {
+      setError('Please enter a valid payment amount');
+      return;
+    }
+
+    if (amount > supplier.outstandingBalance) {
+      setError(`Payment amount cannot exceed outstanding balance of ${formatCurrency(supplier.outstandingBalance)}`);
+      return;
+    }
+
+    onSave({
+      amount,
+      paymentDate,
+      paymentMethod,
+      notes
+    });
+  };
+
+  return (
+    <div className="supplier-modal-overlay" onClick={onClose}>
+      <div className="supplier-modal supplier-payment-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="supplier-modal-header">
+          <h2 className="supplier-modal-title">Record Payment</h2>
+          <button className="supplier-modal-close-x" onClick={onClose}>×</button>
+        </div>
+
+        <div className="payment-supplier-info">
+          <h3>{supplier.name}</h3>
+          <div className="payment-outstanding-display">
+            <span className="payment-label">Outstanding Balance:</span>
+            <span className="payment-amount">{formatCurrency(supplier.outstandingBalance)}</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="supplier-modal-form">
+          {error && (
+            <div className="payment-error-message">
+              {error}
+            </div>
+          )}
+
+          <div className="supplier-input-group">
+            <label className="supplier-modal-label">Payment Amount (Rs.) *</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={supplier.outstandingBalance}
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              className="supplier-modal-input"
+              placeholder="0.00"
+              required
+            />
+            <div className="payment-helper-text">
+              Maximum: {formatCurrency(supplier.outstandingBalance)}
+            </div>
+          </div>
+
+          <div className="supplier-input-row">
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Payment Date *</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="supplier-modal-input"
+                required
+              />
+            </div>
+
+            <div className="supplier-input-group">
+              <label className="supplier-modal-label">Payment Method *</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="supplier-modal-input"
+                required
+              >
+                <option value="CASH">Cash</option>
+                <option value="CREDIT_CARD">Credit Card</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+                <option value="CHECK">Check</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="supplier-input-group">
+            <label className="supplier-modal-label">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="supplier-modal-textarea"
+              placeholder="Payment reference, invoice number, etc."
+              rows={3}
+            />
+          </div>
+
+          <div className="payment-summary">
+            <div className="payment-summary-row">
+              <span>Current Outstanding:</span>
+              <span className="payment-summary-value">{formatCurrency(supplier.outstandingBalance)}</span>
+            </div>
+            <div className="payment-summary-row">
+              <span>Payment Amount:</span>
+              <span className="payment-summary-value">-{formatCurrency(parseFloat(paymentAmount) || 0)}</span>
+            </div>
+            <div className="payment-summary-row payment-summary-total">
+              <span>New Outstanding:</span>
+              <span className="payment-summary-value">
+                {formatCurrency(Math.max(0, supplier.outstandingBalance - (parseFloat(paymentAmount) || 0)))}
+              </span>
+            </div>
+          </div>
+
+          <div className="supplier-modal-button-group">
+            <button
+              type="button"
+              className="supplier-modal-cancel-button"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="supplier-modal-save-button"
+            >
+              Record Payment
             </button>
           </div>
         </form>

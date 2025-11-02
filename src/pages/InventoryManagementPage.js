@@ -614,11 +614,13 @@ const InventoryManagementPage = () => {
 
         {/* Inventory Table */}
         <div className="inventory-table-container">
+          {/* Scroll hint for mobile */}
+          
           <div className="inventory-table-wrapper">
             <table className="inventory-table">
               <thead className="inventory-table-header">
                 <tr>
-                  {['Date', 'Product', 'Type', 'Quantity', 'Unit Price', 'Total Value', 'Reference', 'Supplier', 'Actions'].map((header, index) => (
+                  {['Date', 'Product', 'Type', 'Quantity', 'Unit Price', 'Total Value', 'Payment', 'Reference', 'Supplier', 'Actions'].map((header, index) => (
                     <th key={index} className="inventory-header-cell">
                       {header}
                     </th>
@@ -663,10 +665,29 @@ const InventoryManagementPage = () => {
                       </td>
                       <td className="inventory-table-cell">
                         <div className="inventory-total-value">
-                          {item.quantity && item.unitPrice 
-                            ? formatCurrency(item.quantity * item.unitPrice) 
+                          {item.quantity && item.unitPrice
+                            ? formatCurrency(item.quantity * item.unitPrice)
                             : 'N/A'}
                         </div>
+                      </td>
+                      <td className="inventory-table-cell">
+                        {item.movementType === 'IN' && item.paymentStatus ? (
+                          <div className="payment-status-container">
+                            <span className={`payment-status-badge payment-status-${item.paymentStatus.toLowerCase()}`}>
+                              {item.paymentStatus === 'PAID' && '✅'}
+                              {item.paymentStatus === 'PENDING' && '⏳'}
+                              {item.paymentStatus === 'PARTIAL' && '🔵'}
+                              {' '}{item.paymentStatus}
+                            </span>
+                            {item.paymentMethod && (
+                              <div className="payment-method-text">
+                                {item.paymentMethod.replace('_', ' ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="inventory-na">N/A</div>
+                        )}
                       </td>
                       <td className="inventory-table-cell">
                         <div className="inventory-reference">
@@ -690,7 +711,7 @@ const InventoryManagementPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="9" className="inventory-empty-state">
+                    <td colSpan="10" className="inventory-empty-state">
                       <div className="inventory-empty-icon">📭</div>
                       {searchTerm || filterType !== 'ALL' 
                         ? 'No inventory movements found matching your criteria.' 
@@ -726,7 +747,13 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
     unitPrice: '',
     supplierId: '',
     reference: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    paymentMethod: 'CASH',
+    paymentStatus: 'PAID',
+    paidAmount: '',
+    checkNumber: '',
+    checkDate: '',
+    notes: ''
   });
 
   const [validationErrors, setValidationErrors] = useState({});
@@ -790,6 +817,11 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
       // Get selected supplier to include supplier code
       const selectedSupplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
       
+      const totalCost = formData.unitPrice && formData.quantity
+        ? parseFloat(formData.unitPrice) * parseInt(formData.quantity)
+        : 0;
+
+      // Base movement data (always sent)
       const movementData = {
         productId: parseInt(formData.productId),
         movementType: formData.movementType,
@@ -800,6 +832,41 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
         reference: formData.reference || null,
         date: formData.date + 'T00:00:00'
       };
+
+      // Add payment tracking fields for IN movements
+      if (formData.movementType === 'IN' && formData.unitPrice) {
+        // Calculate paid amount properly based on payment status
+        let paidAmountValue = 0;
+
+        if (formData.paymentStatus === 'PAID') {
+          paidAmountValue = totalCost;
+        } else if (formData.paymentStatus === 'PARTIAL') {
+          paidAmountValue = formData.paidAmount ? parseFloat(formData.paidAmount) : 0;
+        } else if (formData.paymentStatus === 'PENDING') {
+          paidAmountValue = 0;
+        }
+
+        console.log('💰 Payment Calculation:', {
+          totalCost,
+          paymentStatus: formData.paymentStatus,
+          paidAmountInput: formData.paidAmount,
+          calculatedPaidAmount: paidAmountValue
+        });
+
+        movementData.purchasePrice = parseFloat(formData.unitPrice);
+        movementData.paymentMethod = formData.paymentMethod || 'CASH';
+        movementData.paymentStatus = formData.paymentStatus || 'PAID';
+        movementData.paidAmount = paidAmountValue;
+
+        if (formData.paymentMethod === 'CHECK') {
+          movementData.checkNumber = formData.checkNumber || null;
+          movementData.checkDate = formData.checkDate || null;
+        }
+
+        movementData.notes = formData.notes || null;
+      }
+
+      console.log('📦 Sending movement data with payment info:', movementData);
       
       console.log('Sending movement data with supplier code:', movementData);
       await onSave(movementData);
@@ -826,35 +893,44 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
 
   const handleProductSelect = (product) => {
     // Log the complete product object to see its structure
+    console.log('=== PRODUCT SELECTED ===');
     console.log('Complete product object:', JSON.stringify(product, null, 2));
-    
+
     // Try different possible price field names from your backend
     const possiblePriceFields = [
-      'unitPrice', 'price', 'sellingPrice', 'salePrice', 
+      'fixedPrice', 'unitPrice', 'price', 'sellingPrice', 'salePrice',
       'retailPrice', 'listPrice', 'basePrice', 'cost',
       'purchasePrice', 'costPrice', 'standardPrice'
     ];
-    
+
     let foundPrice = '';
+    let foundField = '';
     for (const field of possiblePriceFields) {
       if (product[field] !== undefined && product[field] !== null && product[field] !== '') {
         foundPrice = product[field];
-        console.log(`Found price in field '${field}':`, foundPrice);
+        foundField = field;
+        console.log(`✅ Found price in field '${field}':`, foundPrice);
         break;
       }
     }
-    
+
     if (!foundPrice) {
-      console.log('No price found in product data. Available fields:', Object.keys(product));
+      console.warn('⚠️ No price found in product data. Available fields:', Object.keys(product));
+    } else {
+      console.log(`💰 Setting unit price to: ${foundPrice} (from field: ${foundField})`);
     }
-    
-    setFormData(prev => ({ 
-      ...prev, 
+
+    setFormData(prev => ({
+      ...prev,
       productId: product.id,
       unitPrice: foundPrice || ''
     }));
     setProductSearch(`${product.name} (${product.code})`);
     setShowProductList(false);
+
+    console.log('=== FORM DATA UPDATED ===');
+    console.log('Product ID:', product.id);
+    console.log('Unit Price set to:', foundPrice || '');
   };
 
   const handleSupplierSelect = (supplier) => {
@@ -1185,7 +1261,120 @@ const InventoryMovementModal = ({ products, suppliers, onSave, onClose }) => {
               disabled={saving}
             />
           </div>
-          
+
+          {/* Payment Information - Only for IN movements */}
+          {formData.movementType === 'IN' && formData.unitPrice && formData.quantity && (
+            <div className="payment-section">
+              <h3 className="payment-section-title">💰 Payment Information</h3>
+
+              <div className="inventory-form-row">
+                <div className="inventory-form-group">
+                  <label className="inventory-form-label">Payment Method</label>
+                  <select
+                    value={formData.paymentMethod}
+                    onChange={(e) => handleChange('paymentMethod', e.target.value)}
+                    className="inventory-form-input"
+                    disabled={saving}
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="CREDIT_CARD">Credit Card</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                    <option value="CREDIT">Credit (Pay Later)</option>
+                    <option value="CHECK">Check</option>
+                  </select>
+                </div>
+
+                <div className="inventory-form-group">
+                  <label className="inventory-form-label">Payment Status</label>
+                  <select
+                    value={formData.paymentStatus}
+                    onChange={(e) => handleChange('paymentStatus', e.target.value)}
+                    className="inventory-form-input"
+                    disabled={saving}
+                  >
+                    <option value="PAID">Paid</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="PARTIAL">Partial Payment</option>
+                  </select>
+                </div>
+              </div>
+
+              {formData.paymentStatus === 'PARTIAL' && (
+                <div className="inventory-form-group">
+                  <label className="inventory-form-label">Paid Amount (Rs.)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={parseFloat(formData.unitPrice) * parseInt(formData.quantity || 0)}
+                    value={formData.paidAmount}
+                    onChange={(e) => handleChange('paidAmount', e.target.value)}
+                    className="inventory-form-input"
+                    placeholder="0.00"
+                    disabled={saving}
+                  />
+                  <div className="payment-helper-text">
+                    Total Cost: Rs. {((parseFloat(formData.unitPrice) || 0) * (parseInt(formData.quantity) || 0)).toFixed(2)}
+                  </div>
+                </div>
+              )}
+
+              {formData.paymentMethod === 'CHECK' && (
+                <div className="inventory-form-row">
+                  <div className="inventory-form-group">
+                    <label className="inventory-form-label">Check Number</label>
+                    <input
+                      type="text"
+                      value={formData.checkNumber}
+                      onChange={(e) => handleChange('checkNumber', e.target.value)}
+                      className="inventory-form-input"
+                      placeholder="Check number"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="inventory-form-group">
+                    <label className="inventory-form-label">Check Date</label>
+                    <input
+                      type="date"
+                      value={formData.checkDate}
+                      onChange={(e) => handleChange('checkDate', e.target.value)}
+                      className="inventory-form-input"
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="inventory-form-group">
+                <label className="inventory-form-label">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  className="inventory-form-input"
+                  placeholder="Payment notes, invoice details, etc."
+                  rows={2}
+                  disabled={saving}
+                />
+              </div>
+
+              <div className="payment-summary-box">
+                <div className="payment-summary-row">
+                  <span>Total Cost:</span>
+                  <span className="payment-summary-value">
+                    Rs. {((parseFloat(formData.unitPrice) || 0) * (parseInt(formData.quantity) || 0)).toFixed(2)}
+                  </span>
+                </div>
+                <div className="payment-summary-row">
+                  <span>Payment Status:</span>
+                  <span className={`payment-status-badge payment-status-${formData.paymentStatus.toLowerCase()}`}>
+                    {formData.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="inventory-modal-buttons">
             <button
               type="submit"

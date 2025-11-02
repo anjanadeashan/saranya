@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaLock, FaBuilding } from 'react-icons/fa';
-import axios from 'axios';
+import { FaUser, FaLock } from 'react-icons/fa';
 import './LoginPage.css'; // Import custom CSS
 import Logo from '../asset/Artboard 1@4x.png'; // Import logo image
 
@@ -12,7 +11,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
@@ -28,7 +27,7 @@ const LoginPage = () => {
 
     try {
       const result = await login(username, password);
-      
+
       if (!result.success) {
         setError(result.message || 'Login failed');
       }
