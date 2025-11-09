@@ -637,11 +637,10 @@ const BouncedCheckModal = ({ sale, onClose, onMarkBounced, onClearBounced }) => 
                 {processing ? 'Clearing...' : 'Clear Bounced Status'}
               </button>
             ) : (
-              <button 
+              <button
                 onClick={handleMarkBounced}
-                className="sales-delete-button"
+                className="sales-bounced-modal-button"
                 disabled={processing}
-                style={{ marginLeft: '10px' }}
               >
                 {processing ? 'Processing...' : 'Mark as Bounced'}
               </button>
@@ -1656,6 +1655,8 @@ const SalesPage = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
   const [filterCheckStatus, setFilterCheckStatus] = useState('ALL');
+  const [bouncedDateFrom, setBouncedDateFrom] = useState('');
+  const [bouncedDateTo, setBouncedDateTo] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [checkReminders, setCheckReminders] = useState([]);
@@ -1821,7 +1822,26 @@ const SalesPage = () => {
           (filterCheckStatus === 'BOUNCED' && sale.checkBounced) ||
           (filterCheckStatus === 'NOT_BOUNCED' && sale.paymentMethod === 'CREDIT_CHECK' && !sale.checkBounced);
 
-        return matchesSearch && matchesStatus && matchesPaymentMethod && matchesCheckStatus;
+        // Date range filter for bounced checks
+        let matchesBouncedDateRange = true;
+        if (sale.checkBounced && sale.checkBouncedDate) {
+          const bouncedDate = new Date(sale.checkBouncedDate);
+          if (bouncedDateFrom) {
+            const fromDate = new Date(bouncedDateFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            if (bouncedDate < fromDate) matchesBouncedDateRange = false;
+          }
+          if (bouncedDateTo) {
+            const toDate = new Date(bouncedDateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (bouncedDate > toDate) matchesBouncedDateRange = false;
+          }
+        } else if ((bouncedDateFrom || bouncedDateTo) && filterCheckStatus === 'BOUNCED') {
+          // If date range is set and we're filtering for bounced checks, exclude non-bounced
+          matchesBouncedDateRange = false;
+        }
+
+        return matchesSearch && matchesStatus && matchesPaymentMethod && matchesCheckStatus && matchesBouncedDateRange;
       })
     : [];
 
@@ -2023,9 +2043,97 @@ const SalesPage = () => {
               </select>
             </div>
 
-            
+            <div>
+              <label className="sales-filter-label">Bounced From Date</label>
+              <input
+                type="date"
+                value={bouncedDateFrom}
+                onChange={(e) => setBouncedDateFrom(e.target.value)}
+                className="sales-filter-input"
+                placeholder="From Date"
+              />
+            </div>
+
+            <div>
+              <label className="sales-filter-label">Bounced To Date</label>
+              <input
+                type="date"
+                value={bouncedDateTo}
+                onChange={(e) => setBouncedDateTo(e.target.value)}
+                className="sales-filter-input"
+                placeholder="To Date"
+              />
+            </div>
+
+            {(bouncedDateFrom || bouncedDateTo || filterCheckStatus === 'BOUNCED') && (
+              <div>
+                <button
+                  onClick={() => {
+                    setBouncedDateFrom('');
+                    setBouncedDateTo('');
+                    setFilterCheckStatus('ALL');
+                  }}
+                  className="sales-filter-reset-button"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Bounced Checks Statistics */}
+        {filterCheckStatus === 'BOUNCED' && (
+          <div className="bounced-checks-stats-container">
+            <div className="bounced-checks-stats-header">
+              <h3 className="bounced-checks-stats-title">
+                Bounced/Returned Checks Summary
+                {(bouncedDateFrom || bouncedDateTo) && (
+                  <span className="bounced-checks-period">
+                    {bouncedDateFrom && ` from ${new Date(bouncedDateFrom).toLocaleDateString()}`}
+                    {bouncedDateTo && ` to ${new Date(bouncedDateTo).toLocaleDateString()}`}
+                  </span>
+                )}
+              </h3>
+            </div>
+            <div className="bounced-checks-stats-grid">
+              <div className="bounced-stat-card">
+                <div className="bounced-stat-icon">📊</div>
+                <div className="bounced-stat-content">
+                  <div className="bounced-stat-label">Total Bounced Checks</div>
+                  <div className="bounced-stat-value">{filteredSales.filter(s => s.checkBounced).length}</div>
+                </div>
+              </div>
+              <div className="bounced-stat-card">
+                <div className="bounced-stat-icon">💰</div>
+                <div className="bounced-stat-content">
+                  <div className="bounced-stat-label">Total Amount</div>
+                  <div className="bounced-stat-value">
+                    {formatCurrency(filteredSales.filter(s => s.checkBounced).reduce((sum, sale) => sum + parseFloat(sale.totalAmount || 0), 0))}
+                  </div>
+                </div>
+              </div>
+              <div className="bounced-stat-card">
+                <div className="bounced-stat-icon">⏳</div>
+                <div className="bounced-stat-content">
+                  <div className="bounced-stat-label">Unpaid Bounced</div>
+                  <div className="bounced-stat-value">
+                    {filteredSales.filter(s => s.checkBounced && !s.isPaid).length}
+                  </div>
+                </div>
+              </div>
+              <div className="bounced-stat-card">
+                <div className="bounced-stat-icon">✅</div>
+                <div className="bounced-stat-content">
+                  <div className="bounced-stat-label">Paid Bounced</div>
+                  <div className="bounced-stat-value">
+                    {filteredSales.filter(s => s.checkBounced && s.isPaid).length}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* FIXED: Sales Table with proper customer name display */}
         <div className="sales-table-container">

@@ -298,6 +298,7 @@ const ProductManagementPage = () => {
             setShowModal(true);
           }}
         >
+          <span className="product-add-icon">+</span>
           Add New Product
         </button>
       </div>

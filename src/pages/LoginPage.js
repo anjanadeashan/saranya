@@ -14,11 +14,6 @@ const LoginPage = () => {
 
   const { login, isAuthenticated, user } = useAuth();
 
-  useEffect(() => {
-    // Pre-fill with default admin credentials for demo
-    setUsername('admin');
-    setPassword('admin123');
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +72,7 @@ const LoginPage = () => {
                   </Alert>
                 )}
 
-                <Form onSubmit={handleSubmit} className="login-form">
+                <Form onSubmit={handleSubmit} className="login-form" autoComplete="off">
                   <Form.Group className="form-group-custom">
                     <Form.Label className="form-label-custom">
                       <FaUser className="input-icon" />
@@ -91,6 +86,7 @@ const LoginPage = () => {
                       required
                       disabled={loading}
                       className="form-input-custom"
+                      autoComplete="off"
                     />
                   </Form.Group>
 
@@ -107,6 +103,7 @@ const LoginPage = () => {
                       required
                       disabled={loading}
                       className="form-input-custom"
+                      autoComplete="new-password"
                     />
                   </Form.Group>
 

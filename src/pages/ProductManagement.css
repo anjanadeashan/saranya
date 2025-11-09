@@ -107,6 +107,21 @@ body {
   width: 100%;
 }
 
+/* ===== HEADER SECTION ===== */
+.product-management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  background: var(--white);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
 /* ===== ENHANCED PRODUCT DETAILS MODAL ===== */
 .product-details-modal {
   background: var(--white);
@@ -1745,6 +1760,10 @@ html {
   box-shadow: var(--shadow-sm);
 }
 
+.product-add-icon {
+  font-size: 1.2rem;
+}
+
 /* ===== ENHANCED SEARCH SECTION ===== */
 .product-search-container {
   max-width: var(--container-max-width);
@@ -2052,6 +2071,18 @@ html {
 .product-delete-button {
   background: var(--danger);
   color: var(--white);
+  border: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .product-delete-button:hover {
