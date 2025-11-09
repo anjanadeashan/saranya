@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './SalesPage.css';
 
 // ===== CONFIGURATION =====
+<<<<<<< HEAD
 const API_BASE_URL = 'http://localhost:8080/api';
+=======
+const API_BASE_URL = 'http://107.173.40.112/api/api';
+>>>>>>> master
 
 // ===== UTILITY FUNCTIONS =====
 const formatCurrency = (amount) => {
@@ -22,6 +26,18 @@ const formatDate = (dateString) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleString();
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+
+>>>>>>> master
 const formatDateInvoice = (dateString) => {
   if (!dateString) return 'N/A';
   try {
@@ -264,6 +280,7 @@ const StockAvailabilityChecker = ({ products, saleItems, onStockWarning }) => {
   );
 };
 
+<<<<<<< HEAD
 // FIFO Batch Information Component
 const FIFOBatchInfo = ({ productId, requestedQuantity }) => {
   const [batchInfo, setBatchInfo] = useState([]);
@@ -328,6 +345,10 @@ const FIFOBatchInfo = ({ productId, requestedQuantity }) => {
     </div>
   );
 };
+=======
+// FIFO Batch Information Component - REMOVED
+// Simplified bill creation without FIFO batch view
+>>>>>>> master
 
 // FIXED: Enhanced Product Dropdown Component
 const SearchableProductDropdown = ({ 
@@ -345,12 +366,18 @@ const SearchableProductDropdown = ({
   const [stockInfo, setStockInfo] = useState({});
   const [selectedProductDisplay, setSelectedProductDisplay] = useState('');
 
+<<<<<<< HEAD
   // Initialize filtered products when products prop changes
+=======
+>>>>>>> master
   useEffect(() => {
     setFilteredProducts(products || []);
   }, [products]);
 
+<<<<<<< HEAD
   // Update display when value or products change
+=======
+>>>>>>> master
   useEffect(() => {
     if (value && products && products.length > 0) {
       const numericValue = typeof value === 'string' ? parseInt(value) : value;
@@ -396,6 +423,7 @@ const SearchableProductDropdown = ({
   }, [isOpen, filteredProducts, showStockInfo]);
 
   const handleSelect = (product) => {
+<<<<<<< HEAD
     console.log('Product selected:', product);
     if (product && product.id) {
       const productIdString = product.id.toString();
@@ -413,6 +441,14 @@ const SearchableProductDropdown = ({
       setSearchTerm('');
     } else {
       console.log('Invalid product selection:', product);
+=======
+    if (product && product.id) {
+      const productIdString = product.id.toString();
+      onChange(productIdString);
+      setSelectedProductDisplay(`${product.code} - ${product.name || ''}`);
+      setIsOpen(false);
+      setSearchTerm('');
+>>>>>>> master
     }
   };
 
@@ -427,7 +463,10 @@ const SearchableProductDropdown = ({
   const handleOptionClick = (e, product) => {
     e.preventDefault();
     e.stopPropagation();
+<<<<<<< HEAD
     console.log('Product option clicked:', product.code, product.id);
+=======
+>>>>>>> master
     handleSelect(product);
   };
 
@@ -589,9 +628,146 @@ const SearchableProductDropdown = ({
   );
 };
 
+<<<<<<< HEAD
 // ===== MODAL COMPONENT =====
 
 // COMPLETELY FIXED: Sale Modal Component
+=======
+// NEW: Bounced Check Modal Component
+const BouncedCheckModal = ({ sale, onClose, onMarkBounced, onClearBounced }) => {
+  const [notes, setNotes] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const handleMarkBounced = async () => {
+    if (!window.confirm('Are you sure you want to mark this check as bounced/returned?')) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await onMarkBounced(sale.id, notes);
+      onClose();
+    } catch (error) {
+      alert('Failed to mark check as bounced: ' + error.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleClearBounced = async () => {
+    if (!window.confirm('Clear the bounced status for this check?')) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await onClearBounced(sale.id);
+      onClose();
+    } catch (error) {
+      alert('Failed to clear bounced status: ' + error.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="sales-modal-overlay" onClick={onClose}>
+      <div className="sales-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div>
+          <h2 className="sales-modal-title">
+            {sale.checkBounced ? 'Bounced Check Details' : 'Mark Check as Bounced'}
+          </h2>
+
+          <div className="sales-modal-view-grid">
+            <div className="sales-modal-field">
+              <label className="sales-modal-label">Check Number</label>
+              <p className="sales-modal-value">{sale.checkNumber}</p>
+            </div>
+
+            <div className="sales-modal-field">
+              <label className="sales-modal-label">Customer</label>
+              <p className="sales-modal-value">{getCustomerName(sale)}</p>
+            </div>
+
+            <div className="sales-modal-field">
+              <label className="sales-modal-label">Amount</label>
+              <p className="sales-modal-value">{formatCurrency(sale.totalAmount)}</p>
+            </div>
+
+            <div className="sales-modal-field">
+              <label className="sales-modal-label">Check Date</label>
+              <p className="sales-modal-value">{formatDate(sale.checkDate)}</p>
+            </div>
+
+            {sale.checkBounced && (
+              <>
+                <div className="sales-modal-field">
+                  <label className="sales-modal-label">Bounced Date</label>
+                  <p className="sales-modal-value">{formatDateTime(sale.checkBouncedDate)}</p>
+                </div>
+
+                {sale.checkBouncedNotes && (
+                  <div className="sales-modal-field">
+                    <label className="sales-modal-label">Bounced Notes</label>
+                    <p className="sales-modal-value">{sale.checkBouncedNotes}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!sale.checkBounced && (
+              <div className="sales-form-field">
+                <label className="sales-form-label">Reason / Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Enter reason for bounced check (optional)"
+                  rows="4"
+                  disabled={processing}
+                  className="sales-form-textarea"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="sales-modal-actions">
+            <button 
+              onClick={onClose} 
+              className="sales-modal-close-button"
+              disabled={processing}
+            >
+              Close
+            </button>
+            
+            {sale.checkBounced ? (
+              <button 
+                onClick={handleClearBounced}
+                className="sales-form-submit-button"
+                disabled={processing}
+              >
+                {processing ? 'Clearing...' : 'Clear Bounced Status'}
+              </button>
+            ) : (
+              <button 
+                onClick={handleMarkBounced}
+                className="sales-delete-button"
+                disabled={processing}
+                style={{ marginLeft: '10px' }}
+              >
+                {processing ? 'Processing...' : 'Mark as Bounced'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===== MODAL COMPONENT =====
+
+// Sale Modal Component
+>>>>>>> master
 const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, downloadInvoice }) => {
   const [formData, setFormData] = useState({
     customerId: sale?.customer?.id || sale?.customerId || '',
@@ -612,9 +788,13 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [stockWarnings, setStockWarnings] = useState([]);
+<<<<<<< HEAD
   const [showBatchInfo, setShowBatchInfo] = useState(false);
 
   // Auto-clear validation errors when form data changes
+=======
+
+>>>>>>> master
   useEffect(() => {
     if (formData.saleItems && formData.saleItems.length > 0) {
       setValidationErrors(prev => {
@@ -622,17 +802,26 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         let hasChanges = false;
         
         formData.saleItems.forEach((item, index) => {
+<<<<<<< HEAD
           // Clear product error if product is selected
+=======
+>>>>>>> master
           if (item.productId && item.productId !== '' && item.productId !== '0') {
             const errorKey = `saleItems_${index}_productId`;
             if (newErrors[errorKey]) {
               delete newErrors[errorKey];
               hasChanges = true;
+<<<<<<< HEAD
               console.log(`Auto-cleared product error for item ${index}`);
             }
           }
           
           // Clear quantity error if quantity is valid
+=======
+            }
+          }
+          
+>>>>>>> master
           if (item.quantity && parseInt(item.quantity) > 0) {
             const errorKey = `saleItems_${index}_quantity`;
             if (newErrors[errorKey]) {
@@ -641,7 +830,10 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
             }
           }
           
+<<<<<<< HEAD
           // Clear price error if price is valid
+=======
+>>>>>>> master
           if (item.unitPrice && parseFloat(item.unitPrice) > 0) {
             const errorKey = `saleItems_${index}_unitPrice`;
             if (newErrors[errorKey]) {
@@ -660,12 +852,18 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     setStockWarnings(warnings);
   }, []);
 
+<<<<<<< HEAD
   // FIXED: Enhanced validation function with consistent number parsing
   const validateForm = () => {
     const errors = {};
     
     console.log('Validating form data:', formData);
     
+=======
+  const validateForm = () => {
+    const errors = {};
+    
+>>>>>>> master
     if (!formData.customerId) {
       errors.customerId = 'Please select a customer';
     }
@@ -686,6 +884,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
       let totalAmount = 0;
       
       formData.saleItems.forEach((item, index) => {
+<<<<<<< HEAD
         console.log(`Validating item ${index}:`, item);
         
         // FIXED: Product ID validation - consistent with backend expectations
@@ -696,24 +895,40 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         }
         
         // FIXED: Quantity validation - consistent integer parsing
+=======
+        const productId = parsePositiveInteger(item.productId);
+        if (!productId) {
+          errors[`saleItems_${index}_productId`] = 'Product is required';
+        }
+        
+>>>>>>> master
         const quantity = parsePositiveInteger(item.quantity);
         if (!quantity) {
           errors[`saleItems_${index}_quantity`] = 'Quantity must be a positive whole number';
         }
         
+<<<<<<< HEAD
         // FIXED: Price validation - consistent float parsing
+=======
+>>>>>>> master
         const unitPrice = parsePositiveFloat(item.unitPrice);
         if (!unitPrice) {
           errors[`saleItems_${index}_unitPrice`] = 'Unit price must be greater than 0';
         }
         
+<<<<<<< HEAD
         // FIXED: Discount validation - consistent non-negative parsing
+=======
+>>>>>>> master
         const discount = parseNonNegativeFloat(item.discount);
         if (discount === null || discount < 0) {
           errors[`saleItems_${index}_discount`] = 'Discount cannot be negative';
         }
         
+<<<<<<< HEAD
         // Line total validation with proper number handling
+=======
+>>>>>>> master
         if (productId && quantity && unitPrice && discount !== null) {
           const lineTotal = (quantity * unitPrice) - discount;
           if (lineTotal <= 0) {
@@ -725,7 +940,10 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         }
       });
       
+<<<<<<< HEAD
       // Overall total validation
+=======
+>>>>>>> master
       if (hasValidItems && totalAmount <= 0) {
         errors.totalAmount = 'Total sale amount must be greater than 0';
       }
@@ -735,11 +953,15 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
       }
     }
     
+<<<<<<< HEAD
     console.log('Validation errors:', errors);
+=======
+>>>>>>> master
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
+<<<<<<< HEAD
   // COMPLETELY FIXED: Simplified and robust handleSubmit
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -760,6 +982,12 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     
     if (!validateForm()) {
       console.log('Form validation failed');
+=======
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+>>>>>>> master
       return;
     }
 
@@ -779,19 +1007,26 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     setSaving(true);
     
     try {
+<<<<<<< HEAD
       // SIMPLIFIED: Direct processing without complex filtering
       const saleItems = formData.saleItems.map((item, index) => {
         // Ensure all values are properly formatted
+=======
+      const saleItems = formData.saleItems.map((item) => {
+>>>>>>> master
         const productId = parseInt(item.productId, 10);
         const quantity = parseInt(item.quantity, 10) || 1;
         const unitPrice = parseFloat(item.unitPrice) || 0;
         const discount = parseFloat(item.discount) || 0;
 
+<<<<<<< HEAD
         console.log(`Processing item ${index}:`, {
           original: item,
           processed: { productId, quantity, unitPrice, discount }
         });
 
+=======
+>>>>>>> master
         return {
           productId,
           quantity, 
@@ -800,13 +1035,19 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         };
       });
 
+<<<<<<< HEAD
       // Calculate total
+=======
+>>>>>>> master
       const totalAmount = saleItems.reduce((total, item) => {
         const lineTotal = (item.quantity * item.unitPrice) - item.discount;
         return total + Math.max(0, lineTotal);
       }, 0);
 
+<<<<<<< HEAD
       // FIXED: Final sale data structure
+=======
+>>>>>>> master
       const saleData = {
         customerId: parseInt(formData.customerId, 10),
         paymentMethod: formData.paymentMethod,
@@ -818,6 +1059,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         saleItems: saleItems
       };
       
+<<<<<<< HEAD
       console.log('=== FINAL SALE DATA TO SEND ===');
       console.log('Complete sale data:', JSON.stringify(saleData, null, 2));
       console.log('Sale items breakdown:');
@@ -837,6 +1079,9 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
       
       await onSave(saleData);
       console.log('Sale saved successfully');
+=======
+      await onSave(saleData);
+>>>>>>> master
     } catch (error) {
       console.error('Error saving sale:', error);
       alert(`Failed to save sale: ${error.message}`);
@@ -852,6 +1097,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     }
   };
 
+<<<<<<< HEAD
   // FIXED: Enhanced handleProductSelect with proper type handling
   const handleProductSelect = (index, productId) => {
     console.log(`handleProductSelect called - Index: ${index}, ProductId: ${productId}`);
@@ -866,18 +1112,33 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     console.log(`Converting productId to string: "${stringProductId}"`);
     
     // Update form data immediately
+=======
+  const handleProductSelect = (index, productId) => {
+    if (!productId || productId === '') {
+      return;
+    }
+
+    const stringProductId = productId.toString();
+    
+>>>>>>> master
     setFormData(prev => {
       const newItems = [...prev.saleItems];
       const currentItem = newItems[index];
       
+<<<<<<< HEAD
       // Update product ID
       newItems[index] = { ...currentItem, productId: stringProductId };
       
       // Find product and set price
+=======
+      newItems[index] = { ...currentItem, productId: stringProductId };
+      
+>>>>>>> master
       if (stringProductId && stringProductId !== '0') {
         const numericProductId = parseInt(stringProductId);
         const product = products.find(p => p.id === numericProductId);
         
+<<<<<<< HEAD
         console.log(`Found product:`, product);
         
         if (product) {
@@ -886,12 +1147,19 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
           newItems[index].unitPrice = price;
           
           // Ensure quantity is at least 1
+=======
+        if (product) {
+          const price = product.fixedPrice || product.price || 0;
+          newItems[index].unitPrice = price;
+          
+>>>>>>> master
           if (!newItems[index].quantity || newItems[index].quantity <= 0) {
             newItems[index].quantity = 1;
           }
         }
       }
       
+<<<<<<< HEAD
       console.log(`Updated item ${index}:`, newItems[index]);
       return { ...prev, saleItems: newItems };
     });
@@ -901,6 +1169,14 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
       const newErrors = { ...prev };
       delete newErrors[`saleItems_${index}_productId`];
       console.log(`Cleared validation error for item ${index}`);
+=======
+      return { ...prev, saleItems: newItems };
+    });
+    
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[`saleItems_${index}_productId`];
+>>>>>>> master
       return newErrors;
     });
   };
@@ -917,7 +1193,10 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
       const newItems = formData.saleItems.filter((_, i) => i !== index);
       setFormData(prev => ({ ...prev, saleItems: newItems }));
       
+<<<<<<< HEAD
       // Clear any validation errors for the removed item
+=======
+>>>>>>> master
       const newErrors = { ...validationErrors };
       Object.keys(newErrors).forEach(key => {
         if (key.startsWith(`saleItems_${index}_`)) {
@@ -928,6 +1207,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     }
   };
 
+<<<<<<< HEAD
   // FIXED: Enhanced handleItemChange with proper number handling
   const handleItemChange = (index, field, value) => {
     console.log(`handleItemChange: index=${index}, field=${field}, value="${value}"`);
@@ -940,6 +1220,13 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     setFormData(prev => ({ ...prev, saleItems: newItems }));
     
     // Clear validation error
+=======
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...formData.saleItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setFormData(prev => ({ ...prev, saleItems: newItems }));
+    
+>>>>>>> master
     const errorKey = `saleItems_${index}_${field}`;
     if (validationErrors[errorKey]) {
       setValidationErrors(prev => {
@@ -950,7 +1237,10 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
     }
   };
 
+<<<<<<< HEAD
   // FIXED: Enhanced calculateTotal with proper number handling
+=======
+>>>>>>> master
   const calculateTotal = () => {
     return formData.saleItems.reduce((total, item) => {
       const quantity = parsePositiveInteger(item.quantity) || 0;
@@ -968,7 +1258,11 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
         <div className="sales-modal" onClick={(e) => e.stopPropagation()}>
           <div>
             <h2 className="sales-modal-title">Sale #{sale.id} Details</h2>
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> master
             <div className="sales-invoice-actions">
               <button onClick={() => printInvoice(sale)} className="sales-invoice-button">
                 Print Invoice
@@ -1158,6 +1452,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                 <div>
                   <button
                     type="button"
+<<<<<<< HEAD
                     onClick={() => setShowBatchInfo(!showBatchInfo)}
                     className="sales-batch-info-toggle"
                   >
@@ -1165,6 +1460,8 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                   </button>
                   <button
                     type="button"
+=======
+>>>>>>> master
                     onClick={addItem}
                     disabled={saving}
                     className="sales-add-item-button"
@@ -1183,10 +1480,14 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                         <SearchableProductDropdown
                           products={products}
                           value={item.productId}
+<<<<<<< HEAD
                           onChange={(productId) => {
                             console.log(`Product dropdown onChange triggered for item ${index} with productId:`, productId);
                             handleProductSelect(index, productId);
                           }}
+=======
+                          onChange={(productId) => handleProductSelect(index, productId)}
+>>>>>>> master
                           disabled={saving}
                           className={validationErrors[`saleItems_${index}_productId`] ? 'sales-form-error' : ''}
                           placeholder="Search by product code..."
@@ -1262,6 +1563,7 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                         )}
                       </div>
                     </div>
+<<<<<<< HEAD
                     
                     {showBatchInfo && item.productId && item.quantity && (
                       <FIFOBatchInfo 
@@ -1269,6 +1571,8 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
                         requestedQuantity={parsePositiveInteger(item.quantity) || 0}
                       />
                     )}
+=======
+>>>>>>> master
                   </div>
                 ))}
               </div>
@@ -1318,6 +1622,22 @@ const SaleModal = ({ sale, customers, products, onSave, onClose, printInvoice, d
 
 // ===== INVOICE GENERATION =====
 const generateInvoiceHTML = (sale, products) => {
+<<<<<<< HEAD
+=======
+  const getProductName = (item) => {
+    if (item.product && item.product.name) {
+      return item.product.name;
+    }
+    if (item.productId && products && products.length > 0) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && product.name) {
+        return product.name;
+      }
+    }
+    return 'Unknown Product';
+  };
+
+>>>>>>> master
   const getProductCode = (item) => {
     if (item.product && item.product.code) {
       return item.product.code;
@@ -1328,11 +1648,62 @@ const generateInvoiceHTML = (sale, products) => {
         return product.code;
       }
     }
+<<<<<<< HEAD
     return 'Unknown Code';
+=======
+    return '';
+>>>>>>> master
   };
 
   const customerName = getCustomerName(sale);
   const customerEmail = getCustomerEmail(sale);
+<<<<<<< HEAD
+=======
+  const customerAddress = sale.customer?.address || 'N/A';
+  const customerPhone = sale.customer?.phone || 'N/A';
+
+  // Consolidate duplicate products into single lines
+  const consolidatedItems = [];
+  const itemMap = new Map();
+
+  sale.saleItems?.forEach(item => {
+    const productName = getProductName(item);
+    const productCode = getProductCode(item);
+    const fullName = productCode ? `${productName} (${productCode})` : productName;
+    const size = item.size || '';
+    const unitPrice = item.unitPrice || 0;
+
+    // Create unique key based on product name, code, size, and unit price
+    const key = `${fullName}_${size}_${unitPrice}`;
+
+    if (itemMap.has(key)) {
+      // Add to existing item
+      const existing = itemMap.get(key);
+      existing.quantity += (item.quantity || 0);
+      existing.discount += (item.discount || 0);
+      existing.total = (existing.quantity * existing.unitPrice) - existing.discount;
+    } else {
+      // Create new consolidated item
+      itemMap.set(key, {
+        fullName: fullName,
+        size: size,
+        quantity: item.quantity || 0,
+        unitPrice: unitPrice,
+        discount: item.discount || 0,
+        total: ((item.quantity || 0) * unitPrice) - (item.discount || 0)
+      });
+    }
+  });
+
+  // Convert map to array
+  itemMap.forEach(item => consolidatedItems.push(item));
+
+  // Calculate totals
+  const subTotal = consolidatedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const totalDiscount = consolidatedItems.reduce((sum, item) => sum + item.discount, 0);
+  const grandTotal = sale.totalAmount || 0;
+  const totalQty = consolidatedItems.reduce((sum, item) => sum + item.quantity, 0);
+>>>>>>> master
 
   return `
     <!DOCTYPE html>
@@ -1342,6 +1713,7 @@ const generateInvoiceHTML = (sale, products) => {
       <title>Invoice #${sale.id}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+<<<<<<< HEAD
         body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
         .invoice-container { max-width: 900px; margin: 0 auto; background: white; }
         .invoice-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px; }
@@ -1363,11 +1735,170 @@ const generateInvoiceHTML = (sale, products) => {
         .status-paid { background: #d4edda; color: #155724; }
         .status-unpaid { background: #f8d7da; color: #721c24; }
         @media print { body { padding: 0; } .no-print { display: none; } }
+=======
+        body {
+          font-family: 'Arial', sans-serif;
+          padding: 30px;
+          color: #000;
+          background: #fff;
+        }
+        .invoice-container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
+          border: 2px solid #000;
+          padding: 20px;
+        }
+        .invoice-header {
+          text-align: center;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 15px;
+        }
+        .company-name {
+          font-size: 24px;
+          font-weight: bold;
+          letter-spacing: 2px;
+          margin-bottom: 5px;
+        }
+        .company-tagline {
+          font-size: 11px;
+          font-weight: bold;
+          margin-bottom: 8px;
+        }
+        .company-details {
+          font-size: 10px;
+          line-height: 1.5;
+          margin-bottom: 5px;
+        }
+        .factory-info {
+          font-size: 9px;
+          line-height: 1.4;
+          margin-top: 5px;
+        }
+        .invoice-title {
+          font-size: 20px;
+          font-weight: bold;
+          margin: 15px 0 10px 0;
+          letter-spacing: 3px;
+        }
+        .invoice-meta {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 15px;
+          font-size: 11px;
+        }
+        .invoice-meta-left {
+          width: 60%;
+        }
+        .invoice-meta-right {
+          width: 38%;
+          text-align: right;
+        }
+        .meta-row {
+          margin-bottom: 4px;
+        }
+        .meta-label {
+          font-weight: bold;
+          display: inline-block;
+          width: 120px;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 0;
+          font-size: 11px;
+        }
+        .items-table th, .items-table td {
+          padding: 8px 6px;
+          text-align: left;
+          border: 1px solid #000;
+        }
+        .items-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+          text-align: center;
+        }
+        .items-table .text-center { text-align: center; }
+        .items-table .text-right { text-align: right; }
+        .items-table tbody td {
+          min-height: 30px;
+        }
+        .totals-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+          margin-top: 0;
+        }
+        .totals-table td {
+          padding: 8px 6px;
+          border: 1px solid #000;
+        }
+        .totals-table .total-label {
+          text-align: right;
+          font-weight: bold;
+          width: 70%;
+        }
+        .totals-table .total-qty {
+          text-align: center;
+          width: 10%;
+        }
+        .totals-table .total-amount {
+          text-align: right;
+          width: 20%;
+        }
+        .grand-total-row {
+          font-weight: bold;
+          font-size: 12px;
+        }
+        .signature-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 50px;
+          padding: 0 30px;
+        }
+        .signature-block {
+          text-align: center;
+          width: 200px;
+        }
+        .signature-line {
+          border-bottom: 1px solid #000;
+          margin-bottom: 5px;
+          height: 50px;
+        }
+        .signature-label {
+          font-size: 11px;
+          font-weight: bold;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 2px solid #000;
+          font-size: 11px;
+        }
+        .footer-company {
+          font-weight: bold;
+          font-size: 12px;
+          margin-bottom: 3px;
+        }
+        .thank-you {
+          font-weight: bold;
+          margin-bottom: 10px;
+          font-size: 12px;
+        }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+          .invoice-container { border: 1px solid #000; }
+        }
+>>>>>>> master
       </style>
     </head>
     <body>
       <div class="invoice-container">
         <div class="invoice-header">
+<<<<<<< HEAD
           <div class="company-name">Saranya International</div>
           <div class="company-details">
             No 325/7C, Kande Dewala Road, Pelenwattha, Pannipitiya, Sri Lanka<br>
@@ -1432,6 +1963,123 @@ const generateInvoiceHTML = (sale, products) => {
         <div class="footer" style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #666; font-size: 12px;">
           <div>Thank you for your business!</div>
           <div>This is a computer generated invoice.</div>
+=======
+          <div class="company-name">SARANYA INTERNATIONAL</div>
+          <div class="company-tagline">BEST QUALITY INTERNAARMENT FACTORIES</div>
+          <div class="company-details">
+            <strong>Office:</strong> 0112 745 833 / 0719 666 676 &nbsp;&nbsp; <strong>Email:</strong> internationalsaranya@gmail.com
+          </div>
+          <div class="factory-info">
+            <strong>Factory :</strong> Hadiden kanda Road,nattugama, Badimalana - 0755 666 676<br>
+            <strong>Factory :</strong> Kadaruwewa,Poipitigama,Karamegala - 0766 776 676<br>
+            <strong>Factory :</strong> Millagha Junction,Horana road,Kaluthara - 078 776 676
+          </div>
+          <div class="invoice-title">INVOICE</div>
+        </div>
+
+        <div class="invoice-meta">
+          <div class="invoice-meta-left">
+            <div class="meta-row">
+              <span class="meta-label">Customer Na:</span>
+              <span>${sale.id || 'N/A'}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Customer Name:</span>
+              <span>${customerName}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Customer Address:</span>
+              <span>${customerAddress}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Contact No:</span>
+              <span>${customerPhone}</span>
+            </div>
+          </div>
+          <div class="invoice-meta-right">
+            <div class="meta-row">
+              <span class="meta-label">Inv. No:</span>
+              <span>${sale.id}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Date:</span>
+              <span>${formatDateInvoice(sale.saleDate)}</span>
+            </div>
+          </div>
+        </div>
+
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th style="width: 8%;">No.</th>
+              <th style="width: 42%;">Product's Name</th>
+              <th style="width: 12%;">Size</th>
+              <th style="width: 10%;">Qty</th>
+              <th style="width: 14%;">Unit Price</th>
+              <th style="width: 14%;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${consolidatedItems.map((item, index) => {
+              return `
+              <tr>
+                <td class="text-center">${index + 1}</td>
+                <td>${item.fullName}</td>
+                <td class="text-center">${item.size}</td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-right">${item.unitPrice.toFixed(2)}</td>
+                <td class="text-right">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+              </tr>
+            `}).join('') || '<tr><td colspan="6" style="text-align: center;">No items found</td></tr>'}
+            ${Array(Math.max(0, 10 - consolidatedItems.length)).fill('').map(() => `
+              <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <table class="totals-table">
+          <tr>
+            <td class="total-label">Sub Total</td>
+            <td class="total-qty">${totalQty}</td>
+            <td class="total-amount">${subTotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td class="total-label">Less : Discount</td>
+            <td class="total-qty"></td>
+            <td class="total-amount">${totalDiscount.toFixed(2)}</td>
+          </tr>
+          <tr class="grand-total-row">
+            <td class="total-label">Grand Total</td>
+            <td class="total-qty">${totalQty}</td>
+            <td class="total-amount">${grandTotal.toFixed(2)}</td>
+          </tr>
+        </table>
+
+        <div class="signature-section">
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">Account Executive</div>
+          </div>
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">Purchaser</div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="thank-you">Cheques & Cash Deposits !</div>
+          <div class="footer-company">"SARANYA INTERNATIONAL"</div>
+          <div>0980 1002 6028 - HNB - Kottawa</div>
+          <div>0082 5000 1844 - SampathBank - Nawala</div>
+          <div>0112 745833 / 0719 666676</div>
+>>>>>>> master
         </div>
       </div>
     </body>
@@ -1452,10 +2100,20 @@ const SalesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
+<<<<<<< HEAD
+=======
+  const [filterCheckStatus, setFilterCheckStatus] = useState('ALL');
+>>>>>>> master
   const [showModal, setShowModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [checkReminders, setCheckReminders] = useState([]);
   const [inventorySummary, setInventorySummary] = useState(null);
+<<<<<<< HEAD
+=======
+  const [bouncedCheckSummary, setBouncedCheckSummary] = useState(null);
+  const [showBouncedCheckModal, setShowBouncedCheckModal] = useState(false);
+  const [selectedBouncedSale, setSelectedBouncedSale] = useState(null);
+>>>>>>> master
 
   // Invoice Functions
   const downloadInvoice = useCallback((sale) => {
@@ -1500,17 +2158,30 @@ const SalesPage = () => {
       setLoading(true);
       setError(null);
 
+<<<<<<< HEAD
       const [salesRes, customersRes, productsRes, inventoryRes] = await Promise.all([
         api.get('/sales').catch(err => ({ data: [] })),
         api.get('/customers').catch(err => ({ data: [] })),
         api.get('/products').catch(err => ({ data: [] })),
         api.get('/inventory/summary').catch(err => ({ data: null }))
+=======
+      const [salesRes, customersRes, productsRes, inventoryRes, bouncedRes] = await Promise.all([
+        api.get('/sales').catch(err => ({ data: [] })),
+        api.get('/customers').catch(err => ({ data: [] })),
+        api.get('/products').catch(err => ({ data: [] })),
+        api.get('/inventory/summary').catch(err => ({ data: null })),
+        api.get('/sales/bounced-checks/summary').catch(err => ({ data: null }))
+>>>>>>> master
       ]);
 
       setSales(salesRes.data || []);
       setCustomers(customersRes.data || []);
       setProducts(productsRes.data || []);
       setInventorySummary(inventoryRes.data);
+<<<<<<< HEAD
+=======
+      setBouncedCheckSummary(bouncedRes.data);
+>>>>>>> master
 
       checkPendingReminders(salesRes.data || []);
     } catch (error) {
@@ -1527,6 +2198,10 @@ const SalesPage = () => {
     const pendingChecks = salesData.filter(sale => 
       sale.paymentMethod === 'CREDIT_CHECK' && 
       !sale.isPaid && 
+<<<<<<< HEAD
+=======
+      !sale.checkBounced &&
+>>>>>>> master
       sale.checkDate
     );
 
@@ -1559,6 +2234,7 @@ const SalesPage = () => {
     fetchData();
   }, [fetchData]);
 
+<<<<<<< HEAD
   // FIXED: Filtering Logic with proper customer name handling
   const filteredSales = Array.isArray(sales) 
     ? sales.filter(sale => {
@@ -1568,10 +2244,50 @@ const SalesPage = () => {
         const customerName = getCustomerName(sale);
         
         const matchesSearch = !searchTerm || 
+=======
+  // Bounced Check Handlers
+  const handleMarkCheckBounced = async (saleId, notes) => {
+    try {
+      await api.put(`/sales/${saleId}/mark-check-bounced`, { bouncedNotes: notes });
+      await fetchData();
+      alert('Check marked as bounced successfully!');
+    } catch (error) {
+      console.error('Error marking check as bounced:', error);
+      throw error;
+    }
+  };
+
+  const handleClearBouncedStatus = async (saleId) => {
+    try {
+      await api.put(`/sales/${saleId}/mark-check-cleared`);
+      await fetchData();
+      alert('Bounced status cleared successfully!');
+    } catch (error) {
+      console.error('Error clearing bounced status:', error);
+      throw error;
+    }
+  };
+
+  const handleOpenBouncedModal = (sale) => {
+    setSelectedBouncedSale(sale);
+    setShowBouncedCheckModal(true);
+  };
+
+  // FIXED: Filtering Logic with proper customer name handling
+  const filteredSales = Array.isArray(sales)
+    ? sales.filter(sale => {
+        if (!sale) return false;
+
+        const searchLower = searchTerm.toLowerCase();
+        const customerName = getCustomerName(sale);
+
+        const matchesSearch = !searchTerm ||
+>>>>>>> master
           (customerName && customerName.toLowerCase().includes(searchLower)) ||
           (sale.id && sale.id.toString().includes(searchTerm)) ||
           (sale.checkNumber && sale.checkNumber.toLowerCase().includes(searchLower));
 
+<<<<<<< HEAD
         const matchesStatus = filterStatus === 'ALL' || 
           (filterStatus === 'PAID' && sale.isPaid) ||
           (filterStatus === 'UNPAID' && !sale.isPaid);
@@ -1580,6 +2296,20 @@ const SalesPage = () => {
           sale.paymentMethod === filterPaymentMethod;
 
         return matchesSearch && matchesStatus && matchesPaymentMethod;
+=======
+        const matchesStatus = filterStatus === 'ALL' ||
+          (filterStatus === 'PAID' && sale.isPaid) ||
+          (filterStatus === 'UNPAID' && !sale.isPaid);
+
+        const matchesPaymentMethod = filterPaymentMethod === 'ALL' ||
+          sale.paymentMethod === filterPaymentMethod;
+
+        const matchesCheckStatus = filterCheckStatus === 'ALL' ||
+          (filterCheckStatus === 'BOUNCED' && sale.checkBounced) ||
+          (filterCheckStatus === 'NOT_BOUNCED' && sale.paymentMethod === 'CREDIT_CHECK' && !sale.checkBounced);
+
+        return matchesSearch && matchesStatus && matchesPaymentMethod && matchesCheckStatus;
+>>>>>>> master
       })
     : [];
 
@@ -1658,6 +2388,7 @@ const SalesPage = () => {
   return (
     <div className="sales-page-container">
       <div>
+<<<<<<< HEAD
         {/* Inventory Summary Banner */}
         {inventorySummary && (
           <div className="inventory-summary-banner">
@@ -1667,6 +2398,41 @@ const SalesPage = () => {
               <div>Total Inventory Value: {formatCurrency(inventorySummary.totalInventoryValue)}</div>
               <div>Low Stock Products: {inventorySummary.lowStockProducts}</div>
               <div>Total Batches: {inventorySummary.totalBatches}</div>
+=======
+        
+
+        {/* Bounced Checks Alert */}
+        {bouncedCheckSummary && bouncedCheckSummary.totalBouncedChecks > 0 && (
+          <div className="bounced-checks-alert">
+            <div className="bounced-checks-header">
+              <h3>⚠️ Bounced Checks Alert</h3>
+              <span className="bounced-checks-count">
+                {bouncedCheckSummary.totalBouncedChecks} Bounced Check{bouncedCheckSummary.totalBouncedChecks !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="bounced-checks-summary">
+              <div className="bounced-checks-stat">
+                <strong>Total Amount:</strong> {formatCurrency(bouncedCheckSummary.totalBouncedAmount)}
+              </div>
+            </div>
+            <div className="bounced-checks-list">
+              {bouncedCheckSummary.bouncedChecks?.slice(0, 3).map(sale => (
+                <div key={sale.id} className="bounced-check-item">
+                  <div>
+                    <strong>Check #{sale.checkNumber}</strong> - {getCustomerName(sale)}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    Amount: {formatCurrency(sale.totalAmount)} | 
+                    Bounced: {formatDate(sale.checkBouncedDate)}
+                  </div>
+                </div>
+              ))}
+              {bouncedCheckSummary.bouncedChecks?.length > 3 && (
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  ... and {bouncedCheckSummary.bouncedChecks.length - 3} more
+                </div>
+              )}
+>>>>>>> master
             </div>
           </div>
         )}
@@ -1744,6 +2510,7 @@ const SalesPage = () => {
               </select>
             </div>
 
+<<<<<<< HEAD
             <div className="sales-stats">
               <div className="sales-stats-count">
                 Total Sales: {filteredSales.length}
@@ -1752,6 +2519,22 @@ const SalesPage = () => {
                 Revenue: {formatCurrency(filteredSales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0))}
               </div>
             </div>
+=======
+            <div>
+              <label className="sales-filter-label">Check Status</label>
+              <select
+                value={filterCheckStatus}
+                onChange={(e) => setFilterCheckStatus(e.target.value)}
+                className="sales-filter-select"
+              >
+                <option value="ALL">All Checks</option>
+                <option value="BOUNCED">Returned/Bounced</option>
+                <option value="NOT_BOUNCED">Active Checks</option>
+              </select>
+            </div>
+
+            
+>>>>>>> master
           </div>
         </div>
 
@@ -1786,7 +2569,18 @@ const SalesPage = () => {
                       <td className="sales-table-td">
                         <div>{sale.paymentMethod?.replace('_', ' ') || 'Unknown'}</div>
                         {sale.paymentMethod === 'CREDIT_CHECK' && sale.checkNumber && (
+<<<<<<< HEAD
                           <div className="sales-check-info">Check #{sale.checkNumber}</div>
+=======
+                          <div className="sales-check-info">
+                            Check #{sale.checkNumber}
+                            {sale.checkBounced && (
+                              <span className="sales-bounced-badge" title="Check Bounced">
+                                ⚠️ BOUNCED
+                              </span>
+                            )}
+                          </div>
+>>>>>>> master
                         )}
                       </td>
                       <td className="sales-table-td">
@@ -1810,6 +2604,18 @@ const SalesPage = () => {
                               Mark Paid
                             </button>
                           )}
+<<<<<<< HEAD
+=======
+                          {sale.paymentMethod === 'CREDIT_CHECK' && !sale.isPaid && (
+                            <button 
+                              onClick={() => handleOpenBouncedModal(sale)}
+                              className={`sales-action-button ${sale.checkBounced ? 'sales-clear-bounced-button' : 'sales-bounced-button'}`}
+                              title={sale.checkBounced ? 'Clear bounced status' : 'Mark check as bounced'}
+                            >
+                              {sale.checkBounced ? 'Clear Bounced' : 'Mark Bounced'}
+                            </button>
+                          )}
+>>>>>>> master
                           <button 
                             onClick={() => handleDeleteSale(sale.id)}
                             className="sales-action-button sales-delete-button"
@@ -1826,8 +2632,13 @@ const SalesPage = () => {
                       <div>
                         <div className="sales-empty-title">No sales found</div>
                         <div className="sales-empty-subtitle">
+<<<<<<< HEAD
                           {searchTerm || filterStatus !== 'ALL' || filterPaymentMethod !== 'ALL' 
                             ? 'Try adjusting your filters' 
+=======
+                          {searchTerm || filterStatus !== 'ALL' || filterPaymentMethod !== 'ALL' || filterCheckStatus !== 'ALL'
+                            ? 'Try adjusting your filters'
+>>>>>>> master
                             : 'Create your first sale to get started'}
                         </div>
                       </div>
@@ -1839,7 +2650,11 @@ const SalesPage = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Modal */}
+=======
+        {/* Sale Modal */}
+>>>>>>> master
         {showModal && (
           <SaleModal
             sale={selectedSale}
@@ -1854,6 +2669,22 @@ const SalesPage = () => {
             downloadInvoice={downloadInvoice}
           />
         )}
+<<<<<<< HEAD
+=======
+
+        {/* Bounced Check Modal */}
+        {showBouncedCheckModal && selectedBouncedSale && (
+          <BouncedCheckModal
+            sale={selectedBouncedSale}
+            onClose={() => {
+              setShowBouncedCheckModal(false);
+              setSelectedBouncedSale(null);
+            }}
+            onMarkBounced={handleMarkCheckBounced}
+            onClearBounced={handleClearBouncedStatus}
+          />
+        )}
+>>>>>>> master
       </div>
     </div>
   );

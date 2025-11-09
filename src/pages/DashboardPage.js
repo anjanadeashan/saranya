@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css'; // Import the CSS file
 
 // API configuration to match your Spring Boot backend
+<<<<<<< HEAD
 const API_BASE_URL = 'http://localhost:8080/api';
+=======
+const API_BASE_URL = 'http://107.173.40.112/api/api';
+>>>>>>> master
 
 // Authentication helper functions
 const authUtils = {
@@ -148,6 +152,7 @@ const DashboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+<<<<<<< HEAD
   const [authError, setAuthError] = useState(false);
   
   // Login state for quick testing
@@ -181,10 +186,19 @@ const DashboardPage = () => {
     }
   };
 
+=======
+
+  useEffect(() => {
+    // Load data from backend (no authentication required)
+    fetchDashboardData();
+  }, []);
+
+>>>>>>> master
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
+<<<<<<< HEAD
       setAuthError(false);
 
       // Fetch all data from your existing endpoints
@@ -206,6 +220,33 @@ const DashboardPage = () => {
         return;
       }
 
+=======
+
+      // Fetch all data from backend endpoints (no authentication required)
+      const [salesRes, customersRes, productsRes, suppliersRes, inventoryRes] = await Promise.all([
+        api.get('/sales').catch(err => {
+          console.error('Error fetching sales:', err);
+          return { data: [] };
+        }),
+        api.get('/customers').catch(err => {
+          console.error('Error fetching customers:', err);
+          return { data: [] };
+        }),
+        api.get('/products').catch(err => {
+          console.error('Error fetching products:', err);
+          return { data: [] };
+        }),
+        api.get('/suppliers').catch(err => {
+          console.error('Error fetching suppliers:', err);
+          return { data: [] };
+        }),
+        api.get('/inventory').catch(err => {
+          console.error('Error fetching inventory:', err);
+          return { data: [] };
+        })
+      ]);
+
+>>>>>>> master
       const salesData = Array.isArray(salesRes.data) ? salesRes.data : [];
       const customersData = Array.isArray(customersRes.data) ? customersRes.data : [];
       const productsData = Array.isArray(productsRes.data) ? productsRes.data : [];
@@ -218,16 +259,21 @@ const DashboardPage = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+<<<<<<< HEAD
       if (error.message.includes('Authentication') || error.message.includes('log in')) {
         setAuthError(true);
       } else {
         setError('Failed to load dashboard data');
       }
+=======
+      setError('Failed to load dashboard data');
+>>>>>>> master
     } finally {
       setLoading(false);
     }
   };
 
+<<<<<<< HEAD
   const handleLogout = () => {
     authUtils.removeToken();
     setAuthError(true);
@@ -254,6 +300,8 @@ const DashboardPage = () => {
     });
   };
 
+=======
+>>>>>>> master
   // Helper function to create lookup maps
   const createLookupMaps = (customers, products) => {
     const customerMap = {};
@@ -538,6 +586,7 @@ const DashboardPage = () => {
     );
   };
 
+<<<<<<< HEAD
   // Authentication Error Screen
   if (authError) {
     return (
@@ -635,6 +684,8 @@ const DashboardPage = () => {
     );
   }
 
+=======
+>>>>>>> master
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -931,6 +982,7 @@ const DashboardPage = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Quick Actions */}
       <div className="dashboard-widget-card">
         <h2 className="dashboard-widget-title">⚡ Quick Actions</h2>
@@ -952,6 +1004,9 @@ const DashboardPage = () => {
           </button>
         </div>
       </div>
+=======
+      
+>>>>>>> master
     </div>
   );
 };

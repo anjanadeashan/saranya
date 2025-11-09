@@ -87,6 +87,16 @@ const Sidebar = ({ isOpen }) => {
       label: 'Sales',
       color: '#ff5722',
       gradient: 'linear-gradient(135deg, #ff5722, #ff6b35)'
+<<<<<<< HEAD
+=======
+    },
+    { 
+      path: '/reports', 
+      icon: FaTachometerAlt, 
+      label: 'reports',
+      color: '#ff8c00',
+      gradient: 'linear-gradient(135deg, #ff8c00, #ffa500)'
+>>>>>>> master
     }
   ];
 
@@ -100,7 +110,12 @@ const Sidebar = ({ isOpen }) => {
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
+<<<<<<< HEAD
       overflow: 'hidden',
+=======
+      overflowX: 'hidden',
+      overflowY: 'auto',
+>>>>>>> master
       boxShadow: '4px 0 20px rgba(255, 140, 0, 0.1)',
       borderRight: '1px solid rgba(255, 140, 0, 0.2)',
     },

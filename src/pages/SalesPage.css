@@ -1870,3 +1870,274 @@
 }
 
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+.sales-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* 💪 locks column widths between header & body */
+  margin-top: 1rem;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 0.95rem;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header */
+.sales-items-table thead {
+  background-color: #f3f4f6;
+}
+
+.sales-items-table th {
+  padding: 12px 10px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  text-align: right;
+}
+
+/* Body cells */
+.sales-items-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f1f1;
+  color: #1f2937;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Explicitly set each column width to match */
+.sales-items-table th:nth-child(1),
+.sales-items-table td:nth-child(1) {
+  width: 25%;
+  text-align: left;
+}
+
+.sales-items-table th:nth-child(2),
+.sales-items-table td:nth-child(2) {
+  width: 15%;
+}
+
+.sales-items-table th:nth-child(3),
+.sales-items-table td:nth-child(3) {
+  width: 20%;
+}
+
+.sales-items-table th:nth-child(4),
+.sales-items-table td:nth-child(4) {
+  width: 20%;
+}
+
+.sales-items-table th:nth-child(5),
+.sales-items-table td:nth-child(5) {
+  width: 20%;
+}
+
+/* Highlight Line Total */
+.sales-line-total {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Hover effect */
+.sales-items-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Optional: make numeric columns right-aligned consistently */
+.sales-items-table th:not(:first-child),
+.sales-items-table td:not(:first-child) {
+  text-align: right;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sales-items-table th,
+  .sales-items-table td {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+}
+
+
+
+/* Add these styles to your existing SalesPage.css file */
+
+/* Bounced Checks Alert Section */
+.bounced-checks-alert {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+  border: 2px solid #ff6b6b;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+}
+
+.bounced-checks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.bounced-checks-header h3 {
+  color: #c92a2a;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.bounced-checks-count {
+  background: #c92a2a;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.bounced-checks-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+}
+
+.bounced-checks-stat {
+  font-size: 16px;
+  color: #333;
+}
+
+.bounced-checks-stat strong {
+  color: #c92a2a;
+}
+
+.bounced-checks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bounced-check-item {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #ff6b6b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.bounced-check-item strong {
+  color: #c92a2a;
+  font-size: 15px;
+}
+
+/* Bounced Badge in Table */
+.sales-bounced-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #ff6b6b;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Bounced Check Action Buttons */
+.sales-bounced-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sales-bounced-button:hover {
+  background: linear-gradient(135deg, #ee5a52 0%, #c92a2a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.sales-clear-bounced-button {
+  background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sales-clear-bounced-button:hover {
+  background: linear-gradient(135deg, #37b24d 0%, #2b8a3e 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(81, 207, 102, 0.3);
+}
+
+/* Check Info Styling */
+.sales-check-info {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Responsive Design for Bounced Checks Alert */
+@media (max-width: 768px) {
+  .bounced-checks-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .bounced-checks-count {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .bounced-check-item {
+    padding: 10px 12px;
+  }
+}
+
+/* Animation for Bounced Badge */
+@keyframes pulse-red {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.sales-bounced-badge {
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+/* Enhanced Table Row Highlighting for Bounced Checks */
+.sales-table-row:has(.sales-bounced-badge) {
+  background-color: #fff5f5;
+}
+
+.sales-table-row:has(.sales-bounced-badge):hover {
+  background-color: #ffe8e8;
+}
+>>>>>>> master

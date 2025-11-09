@@ -905,7 +905,13 @@ const ProductModal = ({ product, onSave, onClose, saving }) => {
 
 
 
+<<<<<<< HEAD
 // Enhanced FIFO Stock Management Modal with Stock Information Section (No Auth Required)
+=======
+
+
+
+>>>>>>> master
 const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
   const [stockEntries, setStockEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -921,10 +927,17 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
     notes: ''
   });
 
+<<<<<<< HEAD
   // Always try to fetch data without authentication checks
   useEffect(() => {
     fetchStockEntries();
     fetchProductDetails();
+=======
+  useEffect(() => {
+    fetchStockEntries();
+    fetchProductDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+>>>>>>> master
   }, []);
 
   const fetchProductDetails = async () => {
@@ -932,13 +945,18 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
       const response = await api.get(`/products/${product.id}`, {
         timeout: 10000
       });
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> master
       let detailsData = null;
       if (response.data && response.data.data) {
         detailsData = response.data.data;
       } else if (response.data) {
         detailsData = response.data;
       }
+<<<<<<< HEAD
       
       setProductDetails(detailsData || product);
     } catch (error) {
@@ -986,10 +1004,98 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
   const handleAddStock = async (e) => {
     e.preventDefault();
     
+=======
+
+      setProductDetails(detailsData || product);
+    } catch (error) {
+      console.log('Using basic product data due to:', error?.message || error);
+      setProductDetails(product);
+    }
+  };
+
+  const normalizeEntry = (raw) => {
+    // Safely parse numeric fields and fallback to sensible names
+    const quantity = Number(raw.quantity ?? raw.qty ?? 0) || 0;
+    const purchasePrice = Number(raw.purchasePrice ?? raw.purchase_price ?? raw.unitCost ?? 0) || 0;
+    const remainingFromAPI = raw.remainingQuantity ?? raw.remaining_qty ?? raw.remaining ?? raw.remainingQuantity;
+    const remainingRaw = (typeof remainingFromAPI !== 'undefined' && remainingFromAPI !== null)
+      ? Number(remainingFromAPI) : null;
+
+    const sold = Number(raw.soldQuantity ?? raw.consumedQuantity ?? raw.consumed ?? raw.sold ?? 0) || 0;
+
+    // determine date field
+    const dateAddedStr = raw.dateAdded ?? raw.createdAt ?? raw.addedAt ?? raw.date;
+    const dateAdded = dateAddedStr ? new Date(dateAddedStr) : null;
+
+    const expiryDateStr = raw.expiryDate ?? raw.expiry_date ?? raw.expireAt;
+    const expiryDate = expiryDateStr ? new Date(expiryDateStr) : null;
+
+    // compute remaining: prefer API's remaining if provided, else quantity - sold (clamped to 0)
+    const remaining = remainingRaw !== null
+      ? Math.max(0, remainingRaw)
+      : Math.max(0, quantity - (isNaN(sold) ? 0 : sold));
+
+    return {
+      ...raw,
+      quantity,
+      purchasePrice,
+      remaining,
+      sold,
+      dateAdded,
+      expiryDate
+    };
+  };
+
+  const fetchStockEntries = async () => {
+    try {
+      setLoading(true);
+      console.log(`Fetching stock entries for product ${product.id}`);
+
+      const response = await api.get(`/inventory/product/${product.id}/entries`, {
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status < 500;
+        }
+      });
+
+      console.log('Raw response:', response);
+
+      let entriesData = [];
+      if (response.data && response.data.data) {
+        entriesData = Array.isArray(response.data.data) ? response.data.data : [];
+      } else if (Array.isArray(response.data)) {
+        entriesData = response.data;
+      }
+
+      // Normalize and compute missing fields
+      let normalized = entriesData.map(normalizeEntry);
+
+      // Sort FIFO: oldest first (by dateAdded or createdAt)
+      normalized.sort((a, b) => {
+        const da = a.dateAdded ? a.dateAdded.getTime() : 0;
+        const db = b.dateAdded ? b.dateAdded.getTime() : 0;
+        return da - db;
+      });
+
+      console.log('Processed stock entries:', normalized);
+      setStockEntries(normalized);
+    } catch (error) {
+      console.log('Error fetching stock entries:', error?.message || error);
+      setStockEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddStock = async (e) => {
+    e.preventDefault();
+
+>>>>>>> master
     if (!newStockEntry.quantity || !newStockEntry.purchasePrice) {
       alert('Quantity and purchase price are required');
       return;
     }
+<<<<<<< HEAD
     
     try {
       setAddingStock(true);
@@ -997,25 +1103,46 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
       const stockData = {
         productId: product.id,
         quantity: parseInt(newStockEntry.quantity),
+=======
+
+    try {
+      setAddingStock(true);
+
+      const stockData = {
+        productId: product.id,
+        quantity: parseInt(newStockEntry.quantity, 10),
+>>>>>>> master
         purchasePrice: parseFloat(newStockEntry.purchasePrice),
         expiryDate: newStockEntry.expiryDate || null,
         batchNumber: newStockEntry.batchNumber || null,
         supplier: newStockEntry.supplier || null,
         notes: newStockEntry.notes || null
       };
+<<<<<<< HEAD
       
       console.log('Adding stock entry:', stockData);
       
+=======
+
+      console.log('Adding stock entry:', stockData);
+
+>>>>>>> master
       const response = await api.post(`/inventory/product/${product.id}/entries`, stockData, {
         timeout: 20000,
         headers: {
           'Content-Type': 'application/json'
         }
       });
+<<<<<<< HEAD
       
       console.log('Stock entry added successfully:', response.data);
       
       // Reset form
+=======
+
+      console.log('Stock entry added successfully:', response.data);
+
+>>>>>>> master
       setNewStockEntry({
         quantity: '',
         purchasePrice: '',
@@ -1024,6 +1151,7 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
         supplier: '',
         notes: ''
       });
+<<<<<<< HEAD
       
       setShowAddStock(false);
       
@@ -1043,6 +1171,23 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
       
       let errorMessage = 'Failed to add stock entry';
       
+=======
+
+      setShowAddStock(false);
+
+      // Refresh stock entries and product details
+      await fetchStockEntries();
+      await fetchProductDetails();
+
+      if (onStockUpdated) onStockUpdated();
+
+      alert('Stock entry added successfully!');
+    } catch (error) {
+      console.error('Error adding stock entry:', error);
+
+      let errorMessage = 'Failed to add stock entry';
+
+>>>>>>> master
       if (error.code === 'ECONNABORTED') {
         errorMessage = 'Request timeout - Please try again';
       } else if (error.response?.status === 400) {
@@ -1050,16 +1195,29 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> master
       alert(errorMessage);
     } finally {
       setAddingStock(false);
     }
   };
 
+<<<<<<< HEAD
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
+=======
+  const formatDate = (dateObj) => {
+    if (!dateObj) return 'N/A';
+    // Accept Date or string
+    const d = (dateObj instanceof Date) ? dateObj : new Date(dateObj);
+    if (isNaN(d)) return 'N/A';
+    return d.toLocaleDateString('en-US', {
+>>>>>>> master
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -1068,40 +1226,92 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
     });
   };
 
+<<<<<<< HEAD
   const getTotalStock = () => {
     return stockEntries.reduce((sum, entry) => sum + (entry.remainingQuantity || entry.quantity || 0), 0);
+=======
+  // Use computed sum of remaining as the single source of truth when possible
+  const computedTotalStock = () => {
+    return stockEntries.reduce((sum, entry) => sum + (Number(entry.remaining) || 0), 0);
+  };
+
+  const getTotalStock = () => {
+    // Prefer server productDetails.currentStock if it's a trustworthy number, else compute
+    const serverStock = Number(productDetails?.currentStock ?? product?.currentStock);
+    if (!isNaN(serverStock) && serverStock > 0) {
+      // But double-check: if computed sum differs strongly, prefer computed sum because UI shows entries
+      const computed = computedTotalStock();
+      // choose computed if serverStock is 0 or much different (you can tune tolerance)
+      if (computed !== 0 && Math.abs(computed - serverStock) > Math.max(1, 0.1 * serverStock)) {
+        return computed;
+      }
+      return serverStock;
+    }
+    return computedTotalStock();
+>>>>>>> master
   };
 
   const getOldestStockDate = () => {
     if (stockEntries.length === 0) return null;
+<<<<<<< HEAD
     const dates = stockEntries
       .map(entry => new Date(entry.dateAdded || entry.createdAt))
       .filter(date => !isNaN(date));
     return dates.length > 0 ? new Date(Math.min(...dates)) : null;
+=======
+    const validDates = stockEntries.map(e => e.dateAdded).filter(d => d instanceof Date && !isNaN(d));
+    return validDates.length > 0 ? new Date(Math.min(...validDates.map(d => d.getTime()))) : null;
+>>>>>>> master
   };
 
   const getTotalValue = () => {
     return stockEntries.reduce((sum, entry) => {
+<<<<<<< HEAD
       const qty = entry.remainingQuantity || entry.quantity || 0;
       const price = entry.purchasePrice || 0;
+=======
+      const qty = Number(entry.remaining) || 0;
+      const price = Number(entry.purchasePrice) || 0;
+>>>>>>> master
       return sum + (qty * price);
     }, 0);
   };
 
   const getStockStatus = () => {
+<<<<<<< HEAD
     const currentStock = productDetails?.currentStock || product.currentStock || 0;
     const lowStockThreshold = productDetails?.lowStockThreshold || product.lowStockThreshold || 0;
     
+=======
+    const currentStock = getTotalStock();
+    const lowStockThreshold = Number(productDetails?.lowStockThreshold ?? product?.lowStockThreshold ?? 0) || 0;
+
+>>>>>>> master
     if (currentStock <= 0) return { status: 'out-of-stock', label: 'Out of Stock' };
     if (currentStock <= lowStockThreshold) return { status: 'low-stock', label: 'Low Stock' };
     return { status: 'in-stock', label: 'In Stock' };
   };
 
+<<<<<<< HEAD
+=======
+  // Helper for expiry class
+  const expiryClass = (expiryDate) => {
+    if (!expiryDate) return '';
+    const now = Date.now();
+    const expiryTs = expiryDate instanceof Date ? expiryDate.getTime() : new Date(expiryDate).getTime();
+    if (isNaN(expiryTs)) return '';
+    if (expiryTs < now) return 'expired';
+    if (expiryTs < now + 30 * 24 * 60 * 60 * 1000) return 'expiring-soon';
+    return '';
+  };
+
+>>>>>>> master
   return (
     <div className="product-modal-overlay" onClick={onClose}>
       <div className="stock-fifo-modal enhanced-modal" onClick={(e) => e.stopPropagation()}>
         <div className="stock-modal-header">
           <div className="stock-modal-title-section">
+<<<<<<< HEAD
             <h2 className="stock-modal-title">
               FIFO Stock Management
             </h2>
@@ -1112,6 +1322,12 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
           <button className="stock-modal-close" onClick={onClose}>
             ✕
           </button>
+=======
+            <h2 className="stock-modal-title">FIFO Stock Management</h2>
+            <div className="stock-modal-subtitle">{product.name} ({product.code})</div>
+          </div>
+          <button className="stock-modal-close" onClick={onClose}>✕</button>
+>>>>>>> master
         </div>
 
         <div className="stock-content-wrapper">
@@ -1144,9 +1360,13 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
                 <div className="summary-icon">⏰</div>
                 <div className="summary-content">
                   <span className="stock-summary-label">Oldest Stock</span>
+<<<<<<< HEAD
                   <span className="stock-summary-value">
                     {getOldestStockDate() ? formatDate(getOldestStockDate()) : 'N/A'}
                   </span>
+=======
+                  <span className="stock-summary-value">{getOldestStockDate() ? formatDate(getOldestStockDate()) : 'N/A'}</span>
+>>>>>>> master
                 </div>
               </div>
             </div>
@@ -1160,41 +1380,58 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
                 <div className="stock-info-icon">📦</div>
                 <div className="stock-info-content">
                   <label className="stock-info-label">Current Stock</label>
+<<<<<<< HEAD
                   <span className="stock-info-value highlight-value">
                     {parseInt(productDetails?.currentStock || product.currentStock || 0)} units
                   </span>
+=======
+                  <span className="stock-info-value highlight-value">{getTotalStock()} units</span>
+>>>>>>> master
                 </div>
               </div>
               <div className="stock-info-item">
                 <div className="stock-info-icon">⚠️</div>
                 <div className="stock-info-content">
                   <label className="stock-info-label">Low Stock Threshold</label>
+<<<<<<< HEAD
                   <span className="stock-info-value">
                     {parseInt(productDetails?.lowStockThreshold || product.lowStockThreshold || 0)} units
                   </span>
+=======
+                  <span className="stock-info-value">{Number(productDetails?.lowStockThreshold ?? product?.lowStockThreshold ?? 0)} units</span>
+>>>>>>> master
                 </div>
               </div>
               <div className="stock-info-item">
                 <div className="stock-info-icon">🎯</div>
                 <div className="stock-info-content">
                   <label className="stock-info-label">Stock Status</label>
+<<<<<<< HEAD
                   <span className={`stock-status-badge status-${getStockStatus().status}`}>
                     {getStockStatus().label}
                   </span>
+=======
+                  <span className={`stock-status-badge status-${getStockStatus().status}`}>{getStockStatus().label}</span>
+>>>>>>> master
                 </div>
               </div>
               <div className="stock-info-item">
                 <div className="stock-info-icon">💵</div>
                 <div className="stock-info-content">
                   <label className="stock-info-label">Fixed Price</label>
+<<<<<<< HEAD
                   <span className="stock-info-value">
                     Rs.{parseFloat(productDetails?.fixedPrice || product.fixedPrice || 0).toFixed(2)}
                   </span>
+=======
+                  <span className="stock-info-value">Rs.{Number(productDetails?.fixedPrice ?? product?.fixedPrice ?? 0).toFixed(2)}</span>
+>>>>>>> master
                 </div>
               </div>
             </div>
           </div>
 
+<<<<<<< HEAD
           
 
           {/* Stock Entries Table - Always show this section */}
@@ -1280,6 +1517,78 @@ const StockFIFOModal = ({ product, onClose, onStockUpdated }) => {
     </div>
   )}
 </div>
+=======
+          {/* Stock Entries Table */}
+          <div className="stock-entries-section">
+            <h3 className="section-title">Stock Entries (FIFO Order)</h3>
+
+            {loading ? (
+              <div className="stock-loading">
+                <div className="loading-spinner"></div>
+                <span>Loading stock entries...</span>
+              </div>
+            ) : stockEntries.length > 0 ? (
+              <div className="stock-entries-table-wrapper">
+                <table className="stock-entries-table">
+                  <thead>
+                    <tr>
+                      <th>Date Added</th>
+                      <th>Batch</th>
+                      <th>Original Qty</th>
+                      <th>Remaining Qty</th>
+                      <th>Purchase Price</th>
+                      <th>Total Value</th>
+                      <th>Expiry Date</th>
+                      <th>Supplier</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockEntries.map((entry, index) => {
+                      const remaining = Number(entry.remaining) || 0;
+                      const total = remaining * (Number(entry.purchasePrice) || 0);
+                      const original = Number(entry.quantity) || 0;
+                      return (
+                        <tr key={entry.id || index} className={`stock-entry-row ${remaining <= 0 ? 'depleted' : ''}`}>
+                          <td>{formatDate(entry.dateAdded)}</td>
+                          <td>{entry.batchNumber || entry.batch || '-'}</td>
+                          <td>{original}</td>
+                          <td className="remaining-qty">
+                            <span className="qty-value">{remaining}</span>
+                            {remaining <= 0 && <span className="depleted-badge">DEPLETED</span>}
+                            {remaining < original && remaining > 0 && <span className="partial-badge">PARTIAL</span>}
+                          </td>
+                          <td>Rs.{(Number(entry.purchasePrice) || 0).toFixed(2)}</td>
+                          <td className="total-value">Rs.{total.toFixed(2)}</td>
+                          <td>
+                            {entry.expiryDate ? (
+                              <span className={`expiry-date ${expiryClass(entry.expiryDate)}`}>
+                                {new Date(entry.expiryDate).toLocaleDateString()}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td>{entry.supplier || '-'}</td>
+                          <td>
+                            <span className={`stock-entry-status ${remaining <= 0 ? 'depleted' : 'available'}`}>
+                              {remaining <= 0 ? 'Depleted' : 'Available'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="stock-empty-state">
+                <div className="empty-icon">📦</div>
+                <h4>No Stock Entries Found</h4>
+                <p>No stock entries found for this product.</p>
+                <p>Click "Add Stock Entry" to begin tracking FIFO stock.</p>
+              </div>
+            )}
+          </div>
+>>>>>>> master
         </div>
       </div>
     </div>

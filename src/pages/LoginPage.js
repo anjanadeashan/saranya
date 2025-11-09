@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+<<<<<<< HEAD
 import { FaUser, FaLock, FaBuilding } from 'react-icons/fa';
 import axios from 'axios';
+=======
+import { FaUser, FaLock } from 'react-icons/fa';
+>>>>>>> master
 import './LoginPage.css'; // Import custom CSS
 import Logo from '../asset/Artboard 1@4x.png'; // Import logo image
 
@@ -12,7 +16,11 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> master
   const { login, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
@@ -28,7 +36,11 @@ const LoginPage = () => {
 
     try {
       const result = await login(username, password);
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> master
       if (!result.success) {
         setError(result.message || 'Login failed');
       }
@@ -133,12 +145,20 @@ const LoginPage = () => {
                   </Button>
                 </Form>
 
+<<<<<<< HEAD
                 <div className="demo-credentials">
+=======
+                {/*<div className="demo-credentials">
+>>>>>>> master
                   <small className="demo-text">
                     <strong>Demo Access:</strong><br />
                     Username: admin | Password: admin123
                   </small>
+<<<<<<< HEAD
                 </div>
+=======
+                </div>*/}
+>>>>>>> master
               </Card.Body>
             </Card>
           </Col>

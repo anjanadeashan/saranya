@@ -3,7 +3,11 @@ import './CustomerManagement.css'
 
 
 // API configuration - update these values for your backend
+<<<<<<< HEAD
 const API_BASE_URL = 'http://localhost:8080/api'; // Update this to your backend URL
+=======
+const API_BASE_URL = 'http://107.173.40.112/api/api'; // Update this to your backend URL
+>>>>>>> master
 
 // Authentication helper functions (same as in Dashboard)
 const authUtils = {
@@ -222,6 +226,7 @@ const CustomerManagementPage = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+<<<<<<< HEAD
   const [authError, setAuthError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -230,6 +235,11 @@ const CustomerManagementPage = () => {
   // Login state for quick testing
   const [showLogin, setShowLogin] = useState(false);
   const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
+=======
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+>>>>>>> master
 
   // Currency formatting function
   const formatCurrency = (amount) => {
@@ -240,6 +250,7 @@ const CustomerManagementPage = () => {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     const token = authUtils.getToken();
     if (!token || authUtils.isTokenExpired(token)) {
       setAuthError(true);
@@ -266,11 +277,20 @@ const CustomerManagementPage = () => {
     }
   };
 
+=======
+    // Load customers from backend (no authentication required)
+    fetchCustomers();
+  }, []);
+
+>>>>>>> master
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       setError(null);
+<<<<<<< HEAD
       setAuthError(false);
+=======
+>>>>>>> master
       
       // Call your backend API endpoint
       const response = await api.get('/customers');
@@ -312,12 +332,17 @@ const CustomerManagementPage = () => {
       
     } catch (error) {
       console.error('Error fetching customers:', error);
+<<<<<<< HEAD
       if (error.message.includes('Authentication') || error.message.includes('log in')) {
         setAuthError(true);
       } else {
         setError(`Failed to load customers: ${error.message}`);
         setCustomers([]);
       }
+=======
+      setError(`Failed to load customers: ${error.message}`);
+      setCustomers([]);
+>>>>>>> master
     } finally {
       setLoading(false);
     }
@@ -345,11 +370,15 @@ const CustomerManagementPage = () => {
         fetchCustomers(); // Refresh the list
       } catch (error) {
         console.error('Error deleting customer:', error);
+<<<<<<< HEAD
         if (error.message.includes('Authentication')) {
           setAuthError(true);
         } else {
           alert(`Failed to delete customer: ${error.message}`);
         }
+=======
+        alert(`Failed to delete customer: ${error.message}`);
+>>>>>>> master
       }
     }
   };
@@ -385,11 +414,15 @@ const CustomerManagementPage = () => {
       fetchCustomers(); // Refresh the list
     } catch (error) {
       console.error('Error saving customer:', error);
+<<<<<<< HEAD
       if (error.message.includes('Authentication')) {
         setAuthError(true);
       } else {
         alert(`Failed to save customer: ${error.message}`);
       }
+=======
+      alert(`Failed to save customer: ${error.message}`);
+>>>>>>> master
     }
   };
 
@@ -407,6 +440,7 @@ const CustomerManagementPage = () => {
     return 'credit-normal';
   };
 
+<<<<<<< HEAD
   // Authentication Error Screen
   if (authError) {
     return (
@@ -504,6 +538,8 @@ const CustomerManagementPage = () => {
     );
   }
 
+=======
+>>>>>>> master
   if (loading) {
     return (
       <div className="customer-loading-container">
