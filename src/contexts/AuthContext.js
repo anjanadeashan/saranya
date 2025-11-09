@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // Try to make a test API call to validate token
-      const response = await api.get('/auth/validate'); // හෝ ඔබේ protected endpoint එකක්
+      const response = await api.get('/auth/validate'); 
       return response.status === 200;
     } catch (error) {
       console.error('Token validation failed:', error);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './SalesPage.css';
 
 // ===== CONFIGURATION =====
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://107.173.40.112/api/api';
 
 // ===== UTILITY FUNCTIONS =====
 const formatCurrency = (amount) => {

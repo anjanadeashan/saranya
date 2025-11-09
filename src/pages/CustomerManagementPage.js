@@ -3,7 +3,7 @@ import './CustomerManagement.css'
 
 
 // API configuration - update these values for your backend
-const API_BASE_URL = 'http://localhost:8080/api'; // Update this to your backend URL
+const API_BASE_URL = 'http://107.173.40.112/api/api'; // Update this to your backend URL
 
 // Authentication helper functions (same as in Dashboard)
 const authUtils = {

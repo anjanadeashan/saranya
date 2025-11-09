@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './InventoryManagement.css'; // Import the CSS file
 
 // API configuration
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://107.173.40.112/api/api';
 
 // Authentication helper functions
 const authUtils = {
