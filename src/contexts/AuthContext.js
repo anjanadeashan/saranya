@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import config, { debugLog } from '../config';
 import api from '../services/api';
 
 const AuthContext = createContext();
@@ -33,10 +34,10 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(config.auth.tokenStorageKey);
       
       if (token) {
-        console.log('Found token in localStorage, validating...');
+        debugLog('Found token in localStorage, validating...');
         
         // Validate token with backend
         const isValid = await validateToken(token);
@@ -44,11 +45,11 @@ export const AuthProvider = ({ children }) => {
         if (isValid) {
           setIsAuthenticated(true);
           setUser({ username: 'admin' }); // Backend එකෙන් user data ගන්න පුළුවන්
-          console.log('Token is valid, user authenticated');
+          debugLog('Token is valid, user authenticated');
         } else {
           // Token invalid නම් clear කරන්න
-          console.log('Token is invalid, clearing localStorage');
-          localStorage.removeItem('token');
+          debugLog('Token is invalid, clearing localStorage');
+          localStorage.removeItem(config.auth.tokenStorageKey);
           delete api.defaults.headers.common['Authorization'];
         }
       }
@@ -61,10 +62,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log('Attempting login for user:', username);
+      debugLog('Attempting login for user:', username);
       const response = await api.post('/auth/login', { username, password });
       
-      console.log('Full login response:', response.data);
+      debugLog('Full login response:', response.data);
 
       // Check different possible property names for the token
       const token = response.data.token ||
@@ -72,11 +73,11 @@ export const AuthProvider = ({ children }) => {
                    response.data.jwt ||
                    response.data.authToken;
 
-      console.log('Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
+      debugLog('Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
 
       if (token) {
         // Save token
-        localStorage.setItem('token', token);
+        localStorage.setItem(config.auth.tokenStorageKey, token);
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         // Set user data
@@ -84,17 +85,17 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
 
-        console.log('Login successful');
+        debugLog('Login successful');
         return { success: true };
       } else {
-        console.error('No token found in response. Response data:', response.data);
+        debugLog('No token found in response. Response data:', response.data);
         return {
           success: false,
           message: 'Login failed - no token received from server'
         };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      debugLog('Login error:', error);
       
       // Handle different error scenarios
       let errorMessage = 'Login failed';
@@ -117,8 +118,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    console.log('Logging out user');
-    localStorage.removeItem('token');
+    debugLog('Logging out user');
+    localStorage.removeItem(config.auth.tokenStorageKey);
     delete api.defaults.headers.common['Authorization'];
     setIsAuthenticated(false);
     setUser(null);
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.response?.status === 401 && isAuthenticated) {
-          console.log('Token expired or invalid, logging out');
+          debugLog('Token expired or invalid, logging out');
           logout();
         }
         return Promise.reject(error);
