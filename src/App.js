@@ -1,17 +1,17 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
-import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
-import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import DashboardPage from './pages/DashboardPage';
-import ProductManagementPage from './pages/ProductManagementPage';
-import SupplierManagementPage from './pages/SupplierManagementPage';
+import config from './config';
+import { AuthProvider } from './contexts/AuthContext';
+import AccountingReportsPage from './pages/AccountingReportsSystem';
 import CustomerManagementPage from './pages/CustomerManagementPage';
+import DashboardPage from './pages/DashboardPage';
 import InventoryManagementPage from './pages/InventoryManagementPage';
+import LoginPage from './pages/LoginPage';
+import ProductManagementPage from './pages/ProductManagementPage';
 import SalesPage from './pages/SalesPage';
-import AccountingReportsPage from './pages/AccountingReportsSystem'
+import SupplierManagementPage from './pages/SupplierManagementPage';
 
 function App() {
   return (
@@ -33,7 +33,7 @@ function App() {
           </Routes>
           <ToastContainer
             position="top-right"
-            autoClose={3000}
+            autoClose={config.ui.toastAutoClose}
             hideProgressBar={false}
             newestOnTop={false}
             closeOnClick
