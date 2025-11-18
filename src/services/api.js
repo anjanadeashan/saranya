@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 // Configuration from environment variables
 const config = {
-  baseURL: process.env.REACT_APP_API_URL || 'https://api.saranyainternational.online',
+  baseURL: process.env.REACT_APP_API_URL || 'https://api.saranyainternational.online/api',
   timeout: parseInt(process.env.REACT_APP_API_TIMEOUT) || 10000,
   enableDebugLogging: process.env.REACT_APP_ENABLE_DEBUG_LOGGING === 'true',
 };
