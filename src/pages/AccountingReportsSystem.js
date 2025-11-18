@@ -25,7 +25,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-const API_BASE = 'http://107.173.40.112/api/api';
+const API_BASE = process.env.REACT_APP_API_URL;
 
 // --- Helpers ---------------------------------------------------------------
 const safeJson = async (res, label) => {
