@@ -1172,33 +1172,6 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --white: #1a1a1a;
-    --light-gray: #2d2d2d;
-    --medium-gray: #404040;
-    --dark-gray: #666666;
-    --text-dark: #ffffff;
-    --text-light: #b0b0b0;
-    --border-color: #404040;
-    --primary-orange-subtle: #2d1a14;
-    --primary-orange-lighter: #4d2d1f;
-  }
-  
-  .inventory-table-row:hover {
-    background: #ffccb4;
-  }
-  
-  .inventory-modal-overlay {
-    background: rgba(0, 0, 0, 0.8);
-  }
-  
-  .searchable-option:hover,
-  .searchable-option:focus {
-    background: #3d2418;
-  }
-}
 
 /* Print Styles */
 @media print {
@@ -1929,26 +1902,6 @@
   }
 }
 
-/* Dark mode responsive adjustments */
-@media (prefers-color-scheme: dark) {
-  .inventory-table-wrapper::before {
-    background: #2d1a14;
-    color: var(--primary-orange-light);
-  }
-  
-  .inventory-modal {
-    border: 1px solid var(--border-color);
-  }
-  
-  .inventory-table-row:hover {
-    background: #fce5da;
-  }
-  
-  .searchable-option:hover,
-  .searchable-option:focus {
-    background: #3d2418;
-  }
-}
 
 /* Enhanced keyboard navigation */
 .inventory-table:focus-within {

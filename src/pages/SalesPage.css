@@ -1903,17 +1903,6 @@
   }
 }
 
-/* Dark mode responsive adjustments */
-@media (prefers-color-scheme: dark) {
-  .sales-table-wrapper::before {
-    background: #2d1a14;
-    color: var(--primary-orange-light);
-  }
-  
-  .sales-modal {
-    border: 1px solid var(--border-color);
-  }
-}
 
 
 

@@ -1692,23 +1692,6 @@ html {
   }
 }
 
-/* ===== DARK MODE SUPPORT ===== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --white: #1a1a1a;
-    --light-gray: #2d2d2d;
-    --medium-gray: #404040;
-    --dark-gray: #a0a0a0;
-    --text-dark: #ffffff;
-    --text-light: #b0b0b0;
-    --border-color: #404040;
-    --primary-orange-subtle: rgba(255, 107, 53, 0.1);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.5);
-  }
-}
- 
 
 .product-management-title {
   font-size: var(--font-size-title);
